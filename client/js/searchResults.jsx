@@ -1,4 +1,5 @@
 var React = require('react');
+var ReactDOM = require('react-dom');
 
 var SearchView = React.createClass({
   getInitialState: function () {
@@ -82,7 +83,63 @@ var SearchView = React.createClass({
         <form onSubmit={self.onSubmit}>
           <input type="text" ref="inputEl" />
         </form>
+        <Player />
         <List list={self.state.list} />
+      </div>
+    );
+  }
+});
+
+var Embed = React.createClass({
+  componentDidMount: function () {
+    console.log("compnent mounted, document.body was: " + document.body);
+    var scriptEl = document.createElement('script');
+    scriptEl.src = "https://www.youtube.com/iframe_api?enablejsapi=1"
+
+    var element = ReactDOM.findDOMNode(this);
+    element.appendChild(scriptEl);
+
+    console.log("element was:" + element);
+
+    var player;
+    window.onYouTubeIframeAPIReady = function () {
+      player = new YT.Player('embed-id', {
+        height: '300',
+        width: '200',
+        videoId: '5BmEGm-mraE',
+        events: {
+          'onReady': onPlayerReady,
+          'onStateChange': onPlayerStateChange
+        }
+      });
+    };
+
+     window.onPlayerReady = function (evt) {
+      evt.target.playVideo();
+    };
+
+    window.onPlayerStateChange = function (evt) {
+    };
+  },
+  shouldComponentUpdate: function () {
+    return false;
+  },
+  render: function () {
+    return (
+      <div id="embed-id">
+      </div>
+    );
+  }
+});
+
+var Player = React.createClass({
+  render: function () {
+    return (
+      <div className="player-view">
+        <button className="btn">Play</button>
+        <button className="btn">Pause</button>
+        <button className="btn">Stop</button>
+        <Embed />
       </div>
     );
   }

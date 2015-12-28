@@ -53,9 +53,10 @@ ReactDOM.render(React.createElement(App, null), document.getElementById('app'));
 
 },{"./searchResults.jsx":2,"react":159,"react-dom":3}],2:[function(require,module,exports){
 var React = require('react');
+var ReactDOM = require('react-dom');
 
 var SearchView = React.createClass({
-  displayName: "SearchView",
+  displayName: 'SearchView',
 
   getInitialState: function () {
     return { list: [] };
@@ -133,27 +134,95 @@ var SearchView = React.createClass({
     var self = this;
 
     return React.createElement(
-      "div",
-      { className: "search-view" },
+      'div',
+      { className: 'search-view' },
       React.createElement(
-        "form",
+        'form',
         { onSubmit: self.onSubmit },
-        React.createElement("input", { type: "text", ref: "inputEl" })
+        React.createElement('input', { type: 'text', ref: 'inputEl' })
       ),
+      React.createElement(Player, null),
       React.createElement(List, { list: self.state.list })
     );
   }
 });
 
+var Embed = React.createClass({
+  displayName: 'Embed',
+
+  componentDidMount: function () {
+    console.log("compnent mounted, document.body was: " + document.body);
+    var scriptEl = document.createElement('script');
+    scriptEl.src = "https://www.youtube.com/iframe_api?enablejsapi=1";
+
+    var element = ReactDOM.findDOMNode(this);
+    element.appendChild(scriptEl);
+
+    console.log("element was:" + element);
+
+    var player;
+    window.onYouTubeIframeAPIReady = function () {
+      player = new YT.Player('embed-id', {
+        height: '300',
+        width: '200',
+        videoId: '5BmEGm-mraE',
+        events: {
+          'onReady': onPlayerReady,
+          'onStateChange': onPlayerStateChange
+        }
+      });
+    };
+
+    window.onPlayerReady = function (evt) {
+      evt.target.playVideo();
+    };
+
+    window.onPlayerStateChange = function (evt) {};
+  },
+  shouldComponentUpdate: function () {
+    return false;
+  },
+  render: function () {
+    return React.createElement('div', { id: 'embed-id' });
+  }
+});
+
+var Player = React.createClass({
+  displayName: 'Player',
+
+  render: function () {
+    return React.createElement(
+      'div',
+      { className: 'player-view' },
+      React.createElement(
+        'button',
+        { className: 'btn' },
+        'Play'
+      ),
+      React.createElement(
+        'button',
+        { className: 'btn' },
+        'Pause'
+      ),
+      React.createElement(
+        'button',
+        { className: 'btn' },
+        'Stop'
+      ),
+      React.createElement(Embed, null)
+    );
+  }
+});
+
 var List = React.createClass({
-  displayName: "List",
+  displayName: 'List',
 
   render: function () {
     var list = this.props.list.map(function (val, ind, arr) {
       return React.createElement(ListItem, { title: val.title, duration: val.duration, key: ind });
     });
     return React.createElement(
-      "ul",
+      'ul',
       null,
       list
     );
@@ -161,20 +230,20 @@ var List = React.createClass({
 });
 
 var ListItem = React.createClass({
-  displayName: "ListItem",
+  displayName: 'ListItem',
 
   render: function () {
     return React.createElement(
-      "li",
-      { className: "song-list-item" },
+      'li',
+      { className: 'song-list-item' },
       React.createElement(
-        "span",
-        { className: "song-title" },
+        'span',
+        { className: 'song-title' },
         this.props.title
       ),
       React.createElement(
-        "span",
-        { className: "song-timestamp" },
+        'span',
+        { className: 'song-timestamp' },
         this.props.duration.timestamp
       )
     );
@@ -182,11 +251,11 @@ var ListItem = React.createClass({
 });
 
 var Component = React.createClass({
-  displayName: "Component",
+  displayName: 'Component',
 
   render: function () {
     return React.createElement(
-      "div",
+      'div',
       null,
       React.createElement(SearchView, null)
     );
@@ -195,7 +264,7 @@ var Component = React.createClass({
 
 module.exports = Component;
 
-},{"react":159}],3:[function(require,module,exports){
+},{"react":159,"react-dom":3}],3:[function(require,module,exports){
 'use strict';
 
 module.exports = require('react/lib/ReactDOM');
