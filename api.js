@@ -3,11 +3,55 @@ var jsdom = require('jsdom');
 
 var yt_search_query = "https://www.youtube.com/results?search_query=";
 
+var filters = {
+  min_length: 10, // in seconds
+  max_length: 60 * 7, // in seconds
+};
+var min_songs = 10;
+
 function search (query, done) {
+  var response = null;
+
   var q = query.split(" ");
   var url = yt_search_query + q.join('+');
-  // + "&page=2";
+
+  var songs = [];
+  var max_loops = 5;
+
+  var page = 1;
+  var loops = 0;
+
+  var next = function (page) {
+    console.log("next called ["+loops+"]");
+    loops++;
+
+    findSongs(url, page, function (list) {
+      console.log("found " + list.length + " songs.");
+      songs = songs.concat(list);
+
+      if (songs.length < min_songs && list.length > 0 && loops < max_loops) {
+        console.log("minimum number of songs not found -> doing another request");
+        next(page + 1);
+      } else {
+        // finish the search and return the found songs
+        console.log("number of total songs found: " + songs.length);
+        return done(songs);
+      }
+    });
+  };
+  next(page);
+
+}
+
+function findSongs(url, page, done) {
+  console.log("finding songs");
+
+  page = page || 1
+  url += "&page=" + page;
+
+  console.log("url: " + url);
   var req = https.request(url, function (res) {
+    console.log("http request established...");
     console.log("statusCode: " + res.statusCode);
 
     var responseText = "";
@@ -15,13 +59,15 @@ function search (query, done) {
       responseText += chunk;
     });
     res.on('end', function () {
+      console.log("http request done!");
       parseResponse( responseText, done );
     });
   });
-  req.end(); // send request
-}
+  req.end(); // send the request
+};
 
 function parseResponse (responseText, done) {
+  console.log("parsing response");
   jsdom.env(responseText, function (err, window) {
     var document = window.document;
 
@@ -43,8 +89,8 @@ function parseResponse (responseText, done) {
       //console.log("---------------");
 
       if (a.href.indexOf('list') >= 0 ||
-          duration.seconds < 10 ||
-          duration.seconds > (60 * 12))
+          duration.seconds < filters.min_length ||
+          duration.seconds > (filters.max_length))
         continue; // skip playlist and short sounds
 
       list.push({
@@ -54,6 +100,7 @@ function parseResponse (responseText, done) {
       });
     }
 
+    console.log("parsing done");
     done(list);
   });
 };

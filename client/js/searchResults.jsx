@@ -1,6 +1,11 @@
 var React = require('react');
 var ReactDOM = require('react-dom');
 
+var player = null;
+
+var previousRequest = null;
+var previousSearch = null;
+
 var SearchView = React.createClass({
   getInitialState: function () {
     return {list: []};
@@ -45,12 +50,22 @@ var SearchView = React.createClass({
     console.log("searching...");
     var self = this;
 
+    if (previousSearch == query) {
+      return false;
+    };
+    previousSearch = query;
+
     //var inputEl = self.refs.inputEl;
     var search_query = query;
     //inputEl.value = "";
 
+    if (previousRequest) {
+      previousRequest.abort();
+      previousRequest = null;
+    };
 
     var req = new XMLHttpRequest();
+    previousRequest = req;
     var path = "/results?search_query=" + search_query.split("\s").join("+");
     var url = location.protocol + location.host + path;
     req.open('GET', path, true);
@@ -94,19 +109,19 @@ var Embed = React.createClass({
   componentDidMount: function () {
     console.log("compnent mounted, document.body was: " + document.body);
     var scriptEl = document.createElement('script');
-    scriptEl.src = "https://www.youtube.com/iframe_api?enablejsapi=1"
+    scriptEl.src = "https://www.youtube.com/iframe_api"
 
     var element = ReactDOM.findDOMNode(this);
+    //var element = document.getElementById('hidden');
     element.appendChild(scriptEl);
 
     console.log("element was:" + element);
 
-    var player;
     window.onYouTubeIframeAPIReady = function () {
       player = new YT.Player('embed-id', {
         height: '300',
         width: '200',
-        videoId: '5BmEGm-mraE',
+        videoId: null,
         events: {
           'onReady': onPlayerReady,
           'onStateChange': onPlayerStateChange
@@ -119,14 +134,26 @@ var Embed = React.createClass({
     };
 
     window.onPlayerStateChange = function (evt) {
+      console.log("readyStateChange: ----------------------------");
+      console.log(evt);
+
+      if (evt.data == 1) {
+        //setTimeout(function () {
+        //  player.stopVideo();
+        //}, 5000);
+      }
     };
   },
   shouldComponentUpdate: function () {
     return false;
   },
   render: function () {
+    var styles = {
+      display: "none"
+    };
+
     return (
-      <div id="embed-id">
+      <div style={styles} id="embed-id">
       </div>
     );
   }
@@ -139,7 +166,6 @@ var Player = React.createClass({
         <button className="btn">Play</button>
         <button className="btn">Pause</button>
         <button className="btn">Stop</button>
-        <Embed />
       </div>
     );
   }
@@ -148,7 +174,10 @@ var Player = React.createClass({
 var List = React.createClass({
   render: function () {
     var list = this.props.list.map(function (val, ind, arr) {
-      return <ListItem title={val.title} duration={val.duration} key={ind} />;
+      return <ListItem title={val.title}
+                       duration={val.duration}
+                       url={val.url}
+                       key={ind} />;
     });
     return (
       <ul>
@@ -159,9 +188,21 @@ var List = React.createClass({
 });
 
 var ListItem = React.createClass({
+  handleClick: function () {
+    var self = this;
+    if (player !== null) {
+      player.stopVideo();
+      var u = self.props.url;
+      var videoId = u.slice( u.indexOf('=') + 1 );
+      console.log("loading video: " + videoId);
+      player.loadVideoById({videoId: videoId});
+      player.playVideo();
+    };
+  },
   render: function () {
+    var self = this;
     return (
-      <li className="song-list-item">
+      <li className="song-list-item" onClick={self.handleClick}>
         <span className="song-title">{this.props.title}</span>
         <span className="song-timestamp">{this.props.duration.timestamp}</span>
       </li>
@@ -174,6 +215,7 @@ var Component = React.createClass({
     return (
       <div>
         <SearchView />
+        <Embed />
       </div>
     );
   }

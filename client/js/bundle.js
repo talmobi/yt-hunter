@@ -55,6 +55,11 @@ ReactDOM.render(React.createElement(App, null), document.getElementById('app'));
 var React = require('react');
 var ReactDOM = require('react-dom');
 
+var player = null;
+
+var previousRequest = null;
+var previousSearch = null;
+
 var SearchView = React.createClass({
   displayName: 'SearchView',
 
@@ -101,11 +106,22 @@ var SearchView = React.createClass({
     console.log("searching...");
     var self = this;
 
+    if (previousSearch == query) {
+      return false;
+    };
+    previousSearch = query;
+
     //var inputEl = self.refs.inputEl;
     var search_query = query;
     //inputEl.value = "";
 
+    if (previousRequest) {
+      previousRequest.abort();
+      previousRequest = null;
+    };
+
     var req = new XMLHttpRequest();
+    previousRequest = req;
     var path = "/results?search_query=" + search_query.split("\s").join("+");
     var url = location.protocol + location.host + path;
     req.open('GET', path, true);
@@ -153,19 +169,19 @@ var Embed = React.createClass({
   componentDidMount: function () {
     console.log("compnent mounted, document.body was: " + document.body);
     var scriptEl = document.createElement('script');
-    scriptEl.src = "https://www.youtube.com/iframe_api?enablejsapi=1";
+    scriptEl.src = "https://www.youtube.com/iframe_api";
 
     var element = ReactDOM.findDOMNode(this);
+    //var element = document.getElementById('hidden');
     element.appendChild(scriptEl);
 
     console.log("element was:" + element);
 
-    var player;
     window.onYouTubeIframeAPIReady = function () {
       player = new YT.Player('embed-id', {
         height: '300',
         width: '200',
-        videoId: '5BmEGm-mraE',
+        videoId: null,
         events: {
           'onReady': onPlayerReady,
           'onStateChange': onPlayerStateChange
@@ -177,13 +193,26 @@ var Embed = React.createClass({
       evt.target.playVideo();
     };
 
-    window.onPlayerStateChange = function (evt) {};
+    window.onPlayerStateChange = function (evt) {
+      console.log("readyStateChange: ----------------------------");
+      console.log(evt);
+
+      if (evt.data == 1) {
+        //setTimeout(function () {
+        //  player.stopVideo();
+        //}, 5000);
+      }
+    };
   },
   shouldComponentUpdate: function () {
     return false;
   },
   render: function () {
-    return React.createElement('div', { id: 'embed-id' });
+    var styles = {
+      display: "none"
+    };
+
+    return React.createElement('div', { style: styles, id: 'embed-id' });
   }
 });
 
@@ -208,8 +237,7 @@ var Player = React.createClass({
         'button',
         { className: 'btn' },
         'Stop'
-      ),
-      React.createElement(Embed, null)
+      )
     );
   }
 });
@@ -219,7 +247,10 @@ var List = React.createClass({
 
   render: function () {
     var list = this.props.list.map(function (val, ind, arr) {
-      return React.createElement(ListItem, { title: val.title, duration: val.duration, key: ind });
+      return React.createElement(ListItem, { title: val.title,
+        duration: val.duration,
+        url: val.url,
+        key: ind });
     });
     return React.createElement(
       'ul',
@@ -232,10 +263,22 @@ var List = React.createClass({
 var ListItem = React.createClass({
   displayName: 'ListItem',
 
+  handleClick: function () {
+    var self = this;
+    if (player !== null) {
+      player.stopVideo();
+      var u = self.props.url;
+      var videoId = u.slice(u.indexOf('=') + 1);
+      console.log("loading video: " + videoId);
+      player.loadVideoById({ videoId: videoId });
+      player.playVideo();
+    };
+  },
   render: function () {
+    var self = this;
     return React.createElement(
       'li',
-      { className: 'song-list-item' },
+      { className: 'song-list-item', onClick: self.handleClick },
       React.createElement(
         'span',
         { className: 'song-title' },
@@ -257,7 +300,8 @@ var Component = React.createClass({
     return React.createElement(
       'div',
       null,
-      React.createElement(SearchView, null)
+      React.createElement(SearchView, null),
+      React.createElement(Embed, null)
     );
   }
 });
