@@ -4,37 +4,6 @@ var ReactDOM = require('react-dom');
 
 var SearchResults = require('./searchResults.jsx');
 
-var Timer = React.createClass({
-  displayName: 'Timer',
-
-  getInitialState: function () {
-    return {
-      start_time: Date.now()
-    };
-  },
-  componentDidMount: function () {
-    var self = this;
-    function timerUpdate() {
-      self.forceUpdate();
-      setTimeout(timerUpdate, 1000);
-    };
-    timerUpdate();
-  },
-  render: function () {
-    var start_time = this.state.start_time;
-    var delta = (Date.now() - start_time) / 1000 | 0;
-    var s = delta % 60;
-    var m = delta / 60 % 60 | 0;
-    var h = delta / 60 / 60 % 24 | 0;
-    return React.createElement(
-      'div',
-      null,
-      'seconds since render: ',
-      "" + h + ":" + m + ":" + s
-    );
-  }
-});
-
 var App = React.createClass({
   displayName: 'App',
 
@@ -43,8 +12,7 @@ var App = React.createClass({
       'div',
       { className: 'app-container' },
       React.createElement(SearchResults, null),
-      React.createElement('hr', null),
-      React.createElement(Timer, null)
+      React.createElement('hr', null)
     );
   }
 });
@@ -122,7 +90,7 @@ var SearchView = React.createClass({
 
     var req = new XMLHttpRequest();
     previousRequest = req;
-    var path = "/results?search_query=" + search_query.split("\s").join("+");
+    var path = "/results?search_query=" + search_query.split(/\s+/).join("+");
     var url = location.protocol + location.host + path;
     req.open('GET', path, true);
     req.onload = function () {
@@ -242,15 +210,74 @@ var Player = React.createClass({
   }
 });
 
+var DownloadButton = React.createClass({
+  displayName: 'DownloadButton',
+
+  handleClick: function (evt) {
+    console.log("Download button clicked");
+    evt.preventDefault();
+
+    var url = this.props.url;
+    var video_id = url.slice(url.indexOf('v=') + 2);
+    console.log("video id: " + video_id);
+
+    var name = this.props.name;
+    var path = "/download?v=" + video_id;
+    if (name) {
+      path += "&name=" + name;
+    }
+    var url = location.protocol + location.host + path;
+
+    location.href = path;
+    /*
+    var req = new XMLHttpRequest();
+    req.open('GET', path, true);
+    req.onload = function () {
+      if (req.status >= 200 && req.status <= 400) {
+        // Success!
+        self.setState({
+          list: JSON.parse(req.responseText)
+        });
+      } else {
+        error();
+      }
+    };
+    req.onerror = error;
+    req.send();
+     var error = function () {
+      console.log("error making search request: " + req.status);
+    };
+    */
+  },
+  render: function () {
+    var btnStyles = {
+      width: "50px",
+      height: "50px",
+      float: "left"
+    };
+
+    return React.createElement(
+      'button',
+      { onClick: this.handleClick, style: btnStyles, url: this.props.url },
+      'Download'
+    );
+  }
+});
+
 var List = React.createClass({
   displayName: 'List',
 
   render: function () {
     var list = this.props.list.map(function (val, ind, arr) {
-      return React.createElement(ListItem, { title: val.title,
-        duration: val.duration,
-        url: val.url,
-        key: ind });
+      return React.createElement(
+        'div',
+        null,
+        React.createElement(DownloadButton, { url: val.url, name: val.title }),
+        React.createElement(ListItem, { title: val.title,
+          duration: val.duration,
+          url: val.url,
+          key: ind })
+      );
     });
     return React.createElement(
       'ul',
@@ -268,7 +295,7 @@ var ListItem = React.createClass({
     if (player !== null) {
       player.stopVideo();
       var u = self.props.url;
-      var videoId = u.slice(u.indexOf('=') + 1);
+      var videoId = u.slice(u.indexOf('v=') + 2);
       console.log("loading video: " + videoId);
       player.loadVideoById({ videoId: videoId });
       player.playVideo();

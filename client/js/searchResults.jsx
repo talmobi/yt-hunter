@@ -66,7 +66,7 @@ var SearchView = React.createClass({
 
     var req = new XMLHttpRequest();
     previousRequest = req;
-    var path = "/results?search_query=" + search_query.split("\s").join("+");
+    var path = "/results?search_query=" + search_query.split(/\s+/).join("+");
     var url = location.protocol + location.host + path;
     req.open('GET', path, true);
     req.onload = function () {
@@ -171,13 +171,71 @@ var Player = React.createClass({
   }
 });
 
+var DownloadButton = React.createClass({
+  handleClick: function (evt) {
+    console.log("Download button clicked");
+    evt.preventDefault();
+
+    var url = this.props.url;
+    var video_id = url.slice( url.indexOf('v=') + 2 );
+    console.log("video id: " + video_id);
+
+    var name = this.props.name;
+    var path = "/download?v=" + video_id;
+    if (name) {
+      path += "&name=" + name;
+    }
+    var url = location.protocol + location.host + path;
+
+    location.href = path
+    /*
+    var req = new XMLHttpRequest();
+    req.open('GET', path, true);
+    req.onload = function () {
+      if (req.status >= 200 && req.status <= 400) {
+        // Success!
+        self.setState({
+          list: JSON.parse(req.responseText)
+        });
+      } else {
+        error();
+      }
+    };
+    req.onerror = error;
+    req.send();
+
+    var error = function () {
+      console.log("error making search request: " + req.status);
+    };
+    */
+  },
+  render: function () {
+    var btnStyles = {
+      width: "50px",
+      height: "50px",
+      float: "left"
+    };
+
+    return (
+      <button onClick={this.handleClick} style={btnStyles} url={this.props.url}>
+        Download
+      </button>
+    );
+  }
+});
+
 var List = React.createClass({
   render: function () {
     var list = this.props.list.map(function (val, ind, arr) {
-      return <ListItem title={val.title}
-                       duration={val.duration}
-                       url={val.url}
-                       key={ind} />;
+      return (
+        <div>
+          <DownloadButton url={val.url} name={val.title} />
+          <ListItem  title={val.title}
+                     duration={val.duration}
+                     url={val.url}
+                     key={ind} />
+        </div>
+      );
     });
     return (
       <ul>
@@ -193,7 +251,7 @@ var ListItem = React.createClass({
     if (player !== null) {
       player.stopVideo();
       var u = self.props.url;
-      var videoId = u.slice( u.indexOf('=') + 1 );
+      var videoId = u.slice( u.indexOf('v=') + 2 );
       console.log("loading video: " + videoId);
       player.loadVideoById({videoId: videoId});
       player.playVideo();
