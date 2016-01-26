@@ -5,10 +5,10 @@ var request = require('request');
 
 var GLOBAL = {
   filters: {
-    min_song_duration: 10, // in seconds
-    max_song_duration: 60 * 7, // in seconds
-    include: ['theme'],
-    exclude: ['super'],
+    min_duration: 10, // in seconds
+    max_duration: 60 * 7, // in seconds
+    include: ['ost'],
+    exclude: ['cover'],
   },
   yt_search_query:  "https://www.youtube.com/results?search_query="
 };
@@ -16,7 +16,13 @@ var GLOBAL = {
 var min_songs = 10;
 var max_songs = 30;
 
-function search (query, done) {
+function find (params, done) {
+};
+
+function search (params, done) {
+  var query = params.query || params;
+  var filters = params.filters || GLOBAL.filters;
+
   console.log("query: " + query);
   var response = null;
 
@@ -34,7 +40,7 @@ function search (query, done) {
     console.log("next called ["+loops+"]");
     loops++;
 
-    findSongs(url, page, function (err, list) {
+    findSongs(url, page, function (err, songs) {
       if (err) {
         return done(err);
       } else {
@@ -79,23 +85,20 @@ function shouldSkipSong (song, filters) {
   var duration = song.duration.seconds || song.duration;
   var title = song.title.toUpperCase();
 
-  var exclude = filters.exclude.find(function (val, ind, arr) {
+  var excludes = filters.exclude.find(function (val, ind, arr) {
     var str = val.toUpperCase();
     return title.indexOf(str) >= 0;
   });
 
-  var include = !filters.include.every(function (val, ind, arr) {
+  var includes = filters.include.every(function (val, ind, arr) {
     var str = val.toUpperCase();
     return title.indexOf(str) >= 0;
   });
-
-  console.log("exclude: " + exclude);
-  console.log("include: " + include);
 
   return (
-    duration < filters.min_song_duration ||
-    duration > filters.max_song_duration ||
-    exclude || include
+    duration < filters.min_duration ||
+    duration > filters.max_duration ||
+    excludes || !includes
   );
 };
 
@@ -125,15 +128,6 @@ function parseResponse (responseText, done) {
       url: href,
       duration: duration
     };
-
-    // filter songs
-    if (href.indexOf('list') >= 0 || // skip playlists
-        shouldSkipSong( song )
-       ) {
-      // continue the loop and skip this song
-      console.log("skipping song: " + song.title);
-      continue;
-    }
 
     songs.push(song);
   };
