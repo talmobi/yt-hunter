@@ -9,7 +9,7 @@ app.use( express.static(__dirname + "/client") );
 var requestLimiter = {};
 var requestConcatinator = {};
 
-app.post('/results', function (req, res) {
+app.get('/results', function (req, res) {
   var search_query = req.query.search_query;
   console.log("search_query :" + search_query);
 
