@@ -9,15 +9,14 @@
     "watch": "watchify -t [ babelify --presets [ react ] ] client/js/app.js -o client/js/bundle.js --verbose",
     "livereload": "livereloadx --exclude '.*' --include 'bundle.js' --exclude '*.{js,jsx}' client/"
   },
-  "author": "",
-  "license": "ISC",
+  "author": "talmobi",
+  "license": "MIT",
   "dependencies": {
-    "cheerio": "^0.19.0",
     "express": "^4.13.3",
     "react": "^0.14.3",
     "react-dom": "^0.14.3",
+    "cheerio": "^0.19.0",
     "request": "^2.67.0",
-    "yt-filter": "0.0.1",
     "ytdl-core": "^0.7.9"
   },
   "devDependencies": {

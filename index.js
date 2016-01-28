@@ -9,19 +9,22 @@ app.use( express.static(__dirname + "/client") );
 var requestLimiter = {};
 var requestConcatinator = {};
 
-app.get('/results', function (req, res) {
+app.post('/results', function (req, res) {
   var search_query = req.query.search_query;
   console.log("search_query :" + search_query);
 
   var filters = {
-    include: ['gold']
+    min_duration: req.query.min_duration, // in seconds
+    max_duration: req.query.max_duration, // in seconds
+    include: req.query.include,
+    exclude: req.query.exclude
   };
 
-  ytf(search_query, filters, function (err, list) {
+  ytf(search_query, filters, function (err, songs) {
     if (err) {
       return res.status(500).end();
     } else {
-      res.status(200).json(list).end();
+      res.status(200).json(songs).end();
     }
   });
 });
