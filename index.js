@@ -2,7 +2,7 @@ var express = require('express');
 var http = require('http');
 var app = express();
 
-var syts = require('./simple-youtube-search.js');
+var ytf = require('yt-filter');
 
 app.use( express.static(__dirname + "/client") );
 
@@ -13,7 +13,11 @@ app.get('/results', function (req, res) {
   var search_query = req.query.search_query;
   console.log("search_query :" + search_query);
 
-  syts.search(search_query, function (err, list) {
+  var filters = {
+    include: ['gold']
+  };
+
+  ytf(search_query, filters, function (err, list) {
     if (err) {
       return res.status(500).end();
     } else {
