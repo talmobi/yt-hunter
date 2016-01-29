@@ -3,6 +3,8 @@ var ReactDOM = require('react-dom');
 
 var player = null;
 
+var api = require('./api.js');
+
 var previousRequest = null;
 var previousSearch = null;
 
@@ -42,11 +44,27 @@ var SearchView = React.createClass({
           // show message? TODO
           return;
         }
-        self.submit_search( inputEl.value );
+
+        var includesEl = self.refs.includesEl;
+        var excludesEl = self.refs.excludesEl;
+
+        var i = includesEl.value.split(/\s+/).filter(function (val) {
+          return !!val;
+        });
+        var e = excludesEl.value.split(/\s+/).filter(function (val) {
+          return !!val;
+        });
+
+        var filters = {
+          include: i,
+          exclude: e
+        };
+
+        self.submit_search( inputEl.value, filters );
       }, 400);
     };
   },
-  submit_search: function (query) {
+  submit_search: function (query, filters) {
     console.log("searching...");
     var self = this;
 
@@ -64,27 +82,23 @@ var SearchView = React.createClass({
       previousRequest = null;
     };
 
-    var req = new XMLHttpRequest();
-    previousRequest = req;
-    var path = "/results?search_query=" + search_query.split(/\s+/).join("+");
-    var url = location.protocol + location.host + path;
-    req.open('GET', path, true);
-    req.onload = function () {
-      if (req.status >= 200 && req.status <= 400) {
-        // Success!
-        self.setState({
-          list: JSON.parse(req.responseText)
-        });
-      } else {
-        error();
-      }
+    var opts = {
+      query: search_query,
+      filters: filters || {}
     };
-    req.onerror = error;
-    req.send();
 
-    var error = function () {
-      console.log("error making search request: " + req.status);
-    };
+    //opts.filters = {include: [], exclude: []};
+
+    api.search(opts, function (err, songs) {
+      if (err) {
+        console.log("search failed: " + err);
+      } else {
+        console.log("search success!");
+        self.setState({
+          list: songs
+        });
+      }
+    });
   },
   onSubmit: function (evt) {
     console.log("Form Submit Event Triggered.");
@@ -97,6 +111,8 @@ var SearchView = React.createClass({
       <div className="search-view">
         <form onSubmit={self.onSubmit}>
           <input type="text" ref="inputEl" />
+          <input type="text" ref="includesEl" />
+          <input type="text" ref="excludesEl" />
         </form>
         <Player />
         <List list={self.state.list} />
