@@ -9,6 +9,8 @@ var __song_directory = __dirname + "/songs/";
 var cache = {};
 var progress = {};
 
+var timeout_seconds = 1000 * 60 * 1;
+
 function download (video_id, done) {
   if (cache[video_id]) {
     // song is already cached
@@ -26,7 +28,7 @@ function download (video_id, done) {
       // do nothing
       console.log("download timed out: " + video_id + ", but data was already set");
     }
-  }, 1000 * 60); // timeout after 1 minute
+  }, timeout_seconds); // timeout after 1 minute
 
   if (progress[video_id]) {
     // that video is already downloading

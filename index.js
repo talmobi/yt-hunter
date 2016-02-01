@@ -3,56 +3,20 @@ var http = require('http');
 var app = express();
 var port = 3000;
 
-var bodyParser = require('body-parser');
-var ytf = require('yt-filter');
+var yts = require('./yt-search.js');
 
 app.use( express.static(__dirname + "/client") );
-app.use(bodyParser.json());
 
 var requestLimiter = {};
 var requestConcatinator = {};
 
-app.post('/search', function (req, res) {
-  var data = req.body;
-  console.log("search:" + data.query);
-
-  var search_query = data.query;
-  var filters = data.filters || {};
+app.get('/search', function (req, res) {
+  var query = req.query;
+  var search_query = query.search_query;
 
   console.log("search_query: " + search_query);
-  console.log("filters: ");
-  console.log(filters);
 
-  /*
-  var filters = {
-    min_duration: json.filters.min_duration, // in seconds
-    max_duration: json.filters.max_duration, // in seconds
-    include: json.filters.include,
-    exclude: json.filters.exclude
-  };
-  */
-
-  ytf(search_query, filters, function (err, songs) {
-    if (err) {
-      return res.status(500).end();
-    } else {
-      res.status(200).json(songs).end();
-    }
-  });
-});
-
-app.get('/results', function (req, res) {
-  var search_query = req.query.search_query;
-  console.log("search_query :" + search_query);
-
-  var filters = {
-    min_duration: req.query.min_duration, // in seconds
-    max_duration: req.query.max_duration, // in seconds
-    include: req.query.include,
-    exclude: req.query.exclude
-  };
-
-  ytf(search_query, filters, function (err, songs) {
+  yts(search_query, function (err, songs) {
     if (err) {
       return res.status(500).end();
     } else {

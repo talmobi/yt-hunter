@@ -10,7 +10,11 @@ var previousSearch = null;
 
 var SearchView = React.createClass({
   getInitialState: function () {
-    return {list: []};
+    return {
+      list: [],
+      includes: [],
+      excludes: []
+    };
   },
   componentDidMount: function () {
     var self = this;
@@ -27,6 +31,20 @@ var SearchView = React.createClass({
     inputEl.onfocus = function () {
       inputEl.value = "";
     }
+
+    var includesEl = self.refs.includesEl;
+    includesEl.oninput = includesEl.onchange = function () {
+      self.setState({
+        includes: includesEl.value.split(/\s+/)
+      });
+    };
+
+    var excludesEl = self.refs.excludesEl;
+    excludesEl.oninput = excludesEl.onchange = function () {
+      self.setState({
+        excludes: excludesEl.value.split(/\s+/)
+      });
+    };
 
     var submit_timeout = null;
     inputEl.oninput = inputEl.onchange = function () {
@@ -82,14 +100,9 @@ var SearchView = React.createClass({
       previousRequest = null;
     };
 
-    var opts = {
-      query: search_query,
-      filters: filters || {}
-    };
-
     //opts.filters = {include: [], exclude: []};
 
-    api.search(opts, function (err, songs) {
+    api.search(search_query, function (err, songs) {
       if (err) {
         console.log("search failed: " + err);
       } else {
@@ -106,6 +119,29 @@ var SearchView = React.createClass({
   },
   render: function () {
     var self = this;
+    var filteredList = self.state.list;
+
+    if (self.state.includes.length > 0 && self.state.includes[0].length > 0) {
+      filteredList = filteredList.filter(function (val, ind, arr) {
+        var title = val.title.toUpperCase();
+        return self.state.includes.find(function (val) {
+          var str = val.toUpperCase();
+          return title.indexOf(str) >= 0;
+        });
+      });
+    }
+
+    if (self.state.excludes.length > 0 && self.state.excludes[0].length > 0) {
+      filteredList = filteredList.filter(function (val, ind, arr) {
+        var title = val.title.toUpperCase();
+        return !self.state.excludes.find(function (val) {
+          var str = val.toUpperCase();
+          return title.indexOf(str) >= 0;
+        });
+      });
+    }
+
+    //var filteredList = self.state.list;
 
     return (
       <div className="search-view">
@@ -115,7 +151,7 @@ var SearchView = React.createClass({
           <input type="text" ref="excludesEl" />
         </form>
         <Player />
-        <List list={self.state.list} />
+        <List list={filteredList} />
       </div>
     );
   }

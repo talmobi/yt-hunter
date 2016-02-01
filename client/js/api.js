@@ -1,10 +1,13 @@
 var api = {};
 
-api.search = function (opts, done) {
+api.search = function (query, done) {
   var req = new XMLHttpRequest();
-  var path = '/search';
 
-  req.open('POST', path, true);
+  var queryString = query.split(/\s+/).join('+');
+  console.log("queryString: " + queryString);
+  var path = '/search?search_query=' + queryString;
+
+  req.open('get', path, true);
 
   req.onload = function () {
     if (req.status >= 200 && req.status <= 400) {
@@ -20,13 +23,7 @@ api.search = function (opts, done) {
     done(new Error("Connection error - status: " + req.status));
   };
 
-  var json = {
-    query: opts.query,
-    filters: opts.filters
-  };
-
-  req.setRequestHeader('Content-Type', 'application/json');
-  req.send(JSON.stringify(json));
+  req.send();
 };
 
 module.exports = api;

@@ -1,11 +1,14 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 var api = {};
 
-api.search = function (opts, done) {
+api.search = function (query, done) {
   var req = new XMLHttpRequest();
-  var path = '/search';
 
-  req.open('POST', path, true);
+  var queryString = query.split(/\s+/).join('+');
+  console.log("queryString: " + queryString);
+  var path = '/search?search_query=' + queryString;
+
+  req.open('get', path, true);
 
   req.onload = function () {
     if (req.status >= 200 && req.status <= 400) {
@@ -21,13 +24,7 @@ api.search = function (opts, done) {
     done(new Error("Connection error - status: " + req.status));
   };
 
-  var json = {
-    query: opts.query,
-    filters: opts.filters
-  };
-
-  req.setRequestHeader('Content-Type', 'application/json');
-  req.send(JSON.stringify(json));
+  req.send();
 };
 
 module.exports = api;
@@ -68,7 +65,11 @@ var SearchView = React.createClass({
   displayName: 'SearchView',
 
   getInitialState: function () {
-    return { list: [] };
+    return {
+      list: [],
+      includes: [],
+      excludes: []
+    };
   },
   componentDidMount: function () {
     var self = this;
@@ -84,6 +85,20 @@ var SearchView = React.createClass({
     };
     inputEl.onfocus = function () {
       inputEl.value = "";
+    };
+
+    var includesEl = self.refs.includesEl;
+    includesEl.oninput = includesEl.onchange = function () {
+      self.setState({
+        includes: includesEl.value.split(/\s+/)
+      });
+    };
+
+    var excludesEl = self.refs.excludesEl;
+    excludesEl.oninput = excludesEl.onchange = function () {
+      self.setState({
+        excludes: excludesEl.value.split(/\s+/)
+      });
     };
 
     var submit_timeout = null;
@@ -140,14 +155,9 @@ var SearchView = React.createClass({
       previousRequest = null;
     };
 
-    var opts = {
-      query: search_query,
-      filters: filters || {}
-    };
-
     //opts.filters = {include: [], exclude: []};
 
-    api.search(opts, function (err, songs) {
+    api.search(search_query, function (err, songs) {
       if (err) {
         console.log("search failed: " + err);
       } else {
@@ -164,6 +174,29 @@ var SearchView = React.createClass({
   },
   render: function () {
     var self = this;
+    var filteredList = self.state.list;
+
+    if (self.state.includes.length > 0 && self.state.includes[0].length > 0) {
+      filteredList = filteredList.filter(function (val, ind, arr) {
+        var title = val.title.toUpperCase();
+        return self.state.includes.find(function (val) {
+          var str = val.toUpperCase();
+          return title.indexOf(str) >= 0;
+        });
+      });
+    }
+
+    if (self.state.excludes.length > 0 && self.state.excludes[0].length > 0) {
+      filteredList = filteredList.filter(function (val, ind, arr) {
+        var title = val.title.toUpperCase();
+        return !self.state.excludes.find(function (val) {
+          var str = val.toUpperCase();
+          return title.indexOf(str) >= 0;
+        });
+      });
+    }
+
+    //var filteredList = self.state.list;
 
     return React.createElement(
       'div',
@@ -176,7 +209,7 @@ var SearchView = React.createClass({
         React.createElement('input', { type: 'text', ref: 'excludesEl' })
       ),
       React.createElement(Player, null),
-      React.createElement(List, { list: self.state.list })
+      React.createElement(List, { list: filteredList })
     );
   }
 });

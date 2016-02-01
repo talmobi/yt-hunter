@@ -19,6 +19,7 @@
     "react-dom": "^0.14.3",
     "request": "^2.67.0",
     "yt-filter": "0.0.3",
+    "yt-search": "0.0.0",
     "ytdl-core": "^0.7.9"
   },
   "devDependencies": {
