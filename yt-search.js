@@ -5,8 +5,9 @@ var yt_search_query_uri =  "https://www.youtube.com/results?search_query=";
 
 // settings
 var _opts = {
-  min_results: 5,
-  max_requests: 5,
+  min_results: 80,
+  min_requests: 3,
+  max_requests: 8,
   ignore_playlists: true,
   ignore_accounts: true,
   only_videos: true,
@@ -65,7 +66,8 @@ function search (query, done) {
         console.log("found " + _videos.length + " songs on loop: " + loops + "/" + max_loops);
         videos = videos.concat(_videos);
 
-        if (videos.length < _opts.min_results && videos.length > 0 && loops < max_loops) {
+        if ((loops < _opts.min_requests && videos.length > 0) ||
+            (videos.length < _opts.min_results && videos.length > 0 && loops < max_loops)) {
           console.log("minimum number of songs not found -> doing another request");
           // call the function recursively until max recursive calls are reached
           // or we've a minimum required amount of songs

@@ -146,9 +146,18 @@ var SearchView = React.createClass({
     return (
       <div className="search-view">
         <form onSubmit={self.onSubmit}>
-          <input type="text" ref="inputEl" />
-          <input type="text" ref="includesEl" />
-          <input type="text" ref="excludesEl" />
+          <div>
+            <div>Search Term</div>
+            <input type="text" ref="inputEl" />
+          </div>
+          <div>
+            <div>Includes</div>
+            <input type="text" ref="includesEl" />
+          </div>
+          <div>
+            <div>Excludes</div>
+            <input type="text" ref="excludesEl" />
+          </div>
         </form>
         <Player />
         <List list={filteredList} />

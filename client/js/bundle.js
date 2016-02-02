@@ -204,9 +204,36 @@ var SearchView = React.createClass({
       React.createElement(
         'form',
         { onSubmit: self.onSubmit },
-        React.createElement('input', { type: 'text', ref: 'inputEl' }),
-        React.createElement('input', { type: 'text', ref: 'includesEl' }),
-        React.createElement('input', { type: 'text', ref: 'excludesEl' })
+        React.createElement(
+          'div',
+          null,
+          React.createElement(
+            'div',
+            null,
+            'Search Term'
+          ),
+          React.createElement('input', { type: 'text', ref: 'inputEl' })
+        ),
+        React.createElement(
+          'div',
+          null,
+          React.createElement(
+            'div',
+            null,
+            'Includes'
+          ),
+          React.createElement('input', { type: 'text', ref: 'includesEl' })
+        ),
+        React.createElement(
+          'div',
+          null,
+          React.createElement(
+            'div',
+            null,
+            'Excludes'
+          ),
+          React.createElement('input', { type: 'text', ref: 'excludesEl' })
+        )
       ),
       React.createElement(Player, null),
       React.createElement(List, { list: filteredList })
