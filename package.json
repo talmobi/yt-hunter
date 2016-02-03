@@ -9,6 +9,13 @@
     "watch": "watchify -t [ babelify --presets [ react ] ] client/js/app.js -o client/js/bundle.js --verbose",
     "livereload": "livereloadx --exclude '.*' --include 'bundle.js' --exclude '*.{js,jsx}' client/"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/talmobi/yt-hunter.git"
+  },
+  "bugs": {
+    "url": "https://github.com/talmobi/yt-hunter/issues"
+  },
   "author": "talmobi",
   "license": "MIT",
   "dependencies": {
