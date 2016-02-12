@@ -6,12 +6,31 @@ var url_template = "https://www.youtube.com/watch?v=";
 var __video_directory = __dirname + "/videos/";
 var __song_directory = __dirname + "/songs/";
 
+if (!fs.existsSync(__video_directory)) {
+  fs.mkdirSync(__video_directory);
+}
+
+if (!fs.existsSync(__song_directory)) {
+  fs.mkdirSync(__song_directory);
+}
+
 var cache = {};
 var progress = {};
 
 var timeout_seconds = 1000 * 60 * 1;
 
 function download (video_id, done) {
+  var _source = __video_directory + video_id + ".mp4";
+  var _destination = __song_directory + video_id + ".mp3";
+
+  if (fs.existsSync( _destination )) {
+    return done(null, {
+      video_id: video_id,
+      video: _source,
+      song: _destination
+    });
+  };
+
   if (cache[video_id]) {
     // song is already cached
     console.log("responding from cache");
@@ -110,7 +129,8 @@ function convert (video_id, done) {
   var exec = require('child_process').exec;
 
   var conversionComplete = false;
-  var command = "ffmpeg -i " + source + " " + destination + " -y";
+  //var command = "ffmpeg -i " + source + " " + destination + " -y";
+  var command = "avconv -i " + source + " -vn " + destination + " -y";
 
   var getSize = function () {
     fs.stat(destination, function (err, stats) {

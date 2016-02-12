@@ -5,6 +5,11 @@ var port = 3000;
 
 var yts = require('./yt-search.js');
 
+app.use(function (req, res, next) {
+	console.log("new connection!");
+	next();
+});
+
 app.use( express.static(__dirname + "/client") );
 
 var requestLimiter = {};
@@ -53,7 +58,7 @@ app.get('/download', function (req, res) {
         console.log("duplicate callback, ignoring.");
         return;
       }
-      res.set({
+       res.set({
         'Content-disposition': 'attachment; filename="' + name + '".mp3',
         'Content-type': 'audio/mp3'
       });
@@ -61,6 +66,7 @@ app.get('/download', function (req, res) {
       res.sendFile(data.song);
       console.log("done.");
     } else {
+      var res = res || requestConcatinator[ip].res;
       res.status(500).end("server error");
     }
   });
