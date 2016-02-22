@@ -6,10 +6,19 @@ var url_template = "https://www.youtube.com/watch?v=";
 var __video_directory = __dirname + "/videos/";
 var __song_directory = __dirname + "/songs/";
 
+var Store = require('jfs');
+var db = new Store('data', {type: 'single', saveId: true});
+
 var cache = {};
 var progress = {};
 
 var timeout_seconds = 1000 * 60 * 1;
+
+function StatMessage (data) {
+  var obj = {};
+  Object.assign(obj, data);
+  return obj;
+};
 
 function download (video_id, done) {
   if (cache[video_id]) {
@@ -110,7 +119,8 @@ function convert (video_id, done) {
   var exec = require('child_process').exec;
 
   var conversionComplete = false;
-  var command = "ffmpeg -i " + source + " " + destination + " -y";
+  //var command = "ffmpeg -i " + source + " " + destination + " -y";
+  var command = "avconv -i " + source + " -vn " + destination + " -y";
 
   var getSize = function () {
     fs.stat(destination, function (err, stats) {

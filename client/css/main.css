@@ -26,6 +26,8 @@ html, body {
 
   font-weight: bold;
   font-size: 18px;
+
+  background: url('/assets/search_backup.png');
 }
 
 .player-view {

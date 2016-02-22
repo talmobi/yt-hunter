@@ -3,4 +3,5 @@ node_modules/
 *.swo
 videos/
 songs/
-
+data/
+data.json
