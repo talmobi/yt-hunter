@@ -6,3 +6,4 @@ songs/
 data/
 data.json
 bundle.js
+npm-debug.log
