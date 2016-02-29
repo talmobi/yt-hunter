@@ -17,8 +17,10 @@
     "url": "https://github.com/talmobi/yt-hunter/issues"
   },
   "author": "talmobi",
+  "email": "talmo.christian@gmail.com",
   "license": "MIT",
   "dependencies": {
+    "async": "^1.5.2",
     "body-parser": "^1.14.2",
     "cheerio": "^0.19.0",
     "express": "^4.13.3",

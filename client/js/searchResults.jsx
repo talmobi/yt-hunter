@@ -114,8 +114,8 @@ var SearchView = React.createClass({
     });
   },
   onSubmit: function (evt) {
-    console.log("Form Submit Event Triggered.");
     evt.preventDefault();
+    console.log("Form Submit Event Triggered.");
   },
   render: function () {
     var self = this;

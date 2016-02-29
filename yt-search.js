@@ -3,6 +3,8 @@ var request = require('request');
 
 var yt_search_query_uri =  "https://www.youtube.com/results?search_query=";
 
+var async = require('async');
+
 // settings
 var _opts = {
   min_results: 80,
@@ -39,48 +41,32 @@ function search (query, done) {
   var url = yt_search_query_uri + q.join('+');
 
   var videos = []; // found songs
-  var max_loops = _opts.max_requests; // max amount of recursive calls
-  var loops = 0;
 
   // page number (youtube seach query parameter)
   var page = 1;
 
-  var next = function (page) {
-    console.log("next called ["+loops+"]");
-    loops++;
+  var error = null;
 
-    findVideos(url, page, function (err, _videos) {
-      if (err) {
-        return done(err);
-      } else {
-
-        // filter videos
-        for (var i = 0; i < _videos.length; i++) {
-          var video = _videos[i];
-          if (shouldSkip( video )) {
-            console.log("skipping video: " + video.title);
-            _videos.splice(i--, 1);
-          }
-        }
-
-        console.log("found " + _videos.length + " songs on loop: " + loops + "/" + max_loops);
-        videos = videos.concat(_videos);
-
-        if ((loops < _opts.min_requests && videos.length > 0) ||
-            (videos.length < _opts.min_results && videos.length > 0 && loops < max_loops)) {
-          console.log("minimum number of songs not found -> doing another request");
-          // call the function recursively until max recursive calls are reached
-          // or we've a minimum required amount of songs
-          next(page + 1);
+  var fns = [];
+  for (var i = 1; i < 5; i++) {
+    fns.push(function (callback) {
+      var page = i;
+      findVideos(url, page, function (err, _videos) {
+        if (err) {
+          error = new Error('error in findVideos');
         } else {
-          // finish the search and return the found songs
-          console.log("number of total songs found: " + videos.length);
-          return done(null, videos);
+          videos = videos.concat(_videos);
         }
-      }
+        callback(err);
+      });
     });
   };
-  next(page);
+
+
+  async.parallel(fns, function () {
+    console.log("FOUND: " + videos.length);
+    done(error, videos);
+  });
 }
 
 function findVideos(url, page, done) {
@@ -249,5 +235,3 @@ module.exports = function (query, filters, done) {
 };
 module.exports.opts = opts;
 module.exports.search = search;
-
-
