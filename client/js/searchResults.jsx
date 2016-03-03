@@ -1,6 +1,7 @@
 var React = require('react');
 var ReactDOM = require('react-dom');
 
+// yt-player
 var player = null;
 
 var api = require('./api.js');
@@ -150,16 +151,19 @@ var SearchView = React.createClass({
             <div>Search Term</div>
             <input type="text" ref="inputEl" />
           </div>
-          <div>
-            <div>Includes</div>
-            <input type="text" ref="includesEl" />
+
+          <div style={{display: 'none'}}>
+            <div>
+              <div>Includes</div>
+              <input type="text" ref="includesEl" />
+            </div>
+            <div>
+              <div>Excludes</div>
+              <input type="text" ref="excludesEl" />
+            </div>
           </div>
-          <div>
-            <div>Excludes</div>
-            <input type="text" ref="excludesEl" />
-          </div>
+
         </form>
-        <Player />
         <List list={filteredList} />
       </div>
     );
@@ -289,7 +293,7 @@ var List = React.createClass({
   render: function () {
     var list = this.props.list.map(function (val, ind, arr) {
       return (
-        <div>
+        <div className="list-item-container">
           <DownloadButton url={val.url} name={val.title} />
           <ListItem  title={val.title}
                      duration={val.duration}

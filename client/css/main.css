@@ -69,16 +69,24 @@ ul, ol, li {
   margin: 0;
 }
 
-.song-list-item {
-  width: 100%;
+.list-item-container {
+  display: inline-block;
+  position: relative;
+  max-width: 378px;
+  width: 378px;
   height: 50px;
 }
 
+.song-list-item {
+  max-width: 378px;
+  position: relative;
+}
+
 .song-title {
-  max-width: 425px;
-  float: left;
+  padding: 20px;
+  padding-top: 20px;
+  max-width: 350px;
 }
 
 .song-timestamp {
-  float: right;
 }

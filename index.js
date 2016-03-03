@@ -10,6 +10,8 @@ app.use( express.static(__dirname + "/client") );
 var requestLimiter = {};
 var requestConcatinator = {};
 
+var sockets = [];
+
 app.get('/search', function (req, res) {
   var query = req.query;
   var search_query = query.search_query;
@@ -67,5 +69,18 @@ app.get('/download', function (req, res) {
 });
 
 var server = http.createServer(app);
+
+var io = require('socket.io')(server);
+io.on('connection', function (socket) {
+  console.log(">> socket user connected");
+  sockets.push(socket);
+
+  socket.on('disconnect', function () {
+    var pos = sockets.indexOf(socket);
+    sockets.splice(pos, 1);
+  });
+});
+
 server.listen(port);
 console.log("server listening on port: " + port);
+
