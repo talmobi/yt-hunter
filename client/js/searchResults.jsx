@@ -120,7 +120,28 @@ var SearchView = React.createClass({
       } else {
         console.log("search success!");
 
+        // filter for song length, min/max
         songs = timeFilter(songs);
+
+        var splits = search_query.split(/\s+/);
+        // sort for search words
+        for (var i = 0; i < splits.length; i++) {
+          var sortWord = splits[i];
+          songs.sort(function (a, b) {
+            var at = a.title.toLowerCase();
+            if (at.indexOf( sortWord ) >= 0) {
+              //console.log("found ost: " + at);
+              return 1;
+            }
+            var bt = b.title.toLowerCase();
+            if (bt.indexOf( sortWord ) >= 0) {
+              //console.log("found ost: " + bt);
+              return -1;
+            }
+            return 0;
+          });
+        }
+        songs.reverse();
 
         self.setState({
           list: songs
@@ -394,7 +415,7 @@ var ListItem = React.createClass({
       var n = Math.pow(.9, self.state.shortCounter);
       title = title.slice(0, Math.floor(title.length * (n) - 1)).trim();
       self.state.title = title;
-      console.log(self.state.shortCounter);
+      //console.log(self.state.shortCounter);
       title += "...";
     }
 

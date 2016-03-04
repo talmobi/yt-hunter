@@ -49,17 +49,21 @@ function search (query, done) {
 
   var fns = [];
   for (var i = 1; i < 5; i++) {
-    fns.push(function (callback) {
-      var page = i;
-      findVideos(url, page, function (err, _videos) {
-        if (err) {
-          error = new Error('error in findVideos');
-        } else {
-          videos = videos.concat(_videos);
+    fns.push(
+      (function () {
+        var page = i;
+        return function (callback) {
+          findVideos(url, page, function (err, _videos) {
+            if (err) {
+              error = new Error('error in findVideos');
+            } else {
+              videos = videos.concat(_videos);
+            }
+            callback(err);
+          });
         }
-        callback(err);
-      });
-    });
+      })()
+    );
   };
 
 
@@ -70,10 +74,10 @@ function search (query, done) {
 }
 
 function findVideos(url, page, done) {
-  console.log("finding songs from: " + url);
 
-  page = page || 1
-    url += "&page=" + page;
+  url += "&page=" + page;
+
+  console.log("finding songs from: " + url);
 
   request(url, function (err, res, body) {
     if (err) {
