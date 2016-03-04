@@ -9,6 +9,17 @@ var api = require('./api.js');
 var previousRequest = null;
 var previousSearch = null;
 
+function timeFilter (songs) {
+  // song.duration.seconds
+  return songs.filter(function (val, ind, arr) {
+    var song = val;
+    var seconds = song.duration.seconds;
+    var min = 60 * 1;
+    var max = 60 * 9;
+    return (seconds >= min && seconds <= max);
+  });
+};
+
 var SearchView = React.createClass({
   getInitialState: function () {
     return {
@@ -108,6 +119,9 @@ var SearchView = React.createClass({
         console.log("search failed: " + err);
       } else {
         console.log("search success!");
+
+        songs = timeFilter(songs);
+
         self.setState({
           list: songs
         });
@@ -147,9 +161,11 @@ var SearchView = React.createClass({
     return (
       <div className="search-view">
         <form onSubmit={self.onSubmit}>
-          <div>
-            <div>Search Term</div>
+          <div id="main-input">
             <input type="text" ref="inputEl" />
+            <button className="icon-search" id="main-search-button" type="submit">
+              Search
+            </button>
           </div>
 
           <div style={{display: 'none'}}>
@@ -236,8 +252,30 @@ var Player = React.createClass({
   }
 });
 
-var DownloadButton = React.createClass({
-  handleClick: function (evt) {
+var PLAYER_STATES = {
+  play: "icon-play",
+  stop: "icon-stop",
+  pause: "icon-pause",
+  loading: "icon-spin3",
+};
+var ListItemPlayer = React.createClass({
+  render: function () {
+    var keys = Object.keys(PLAYER_STATES);
+    var class_name = PLAYER_STATES[keys[keys.length * Math.random() | 0]];
+    if (class_name === PLAYER_STATES.loading) {
+      class_name += " animate-spin";
+    }
+
+    return (
+      <div className="list-item-player">
+        <i className={class_name}></i>
+      </div>
+    );
+  }
+});
+
+var ListItemButtons = React.createClass({
+  downloadClick: function (evt) {
     console.log("Download button clicked");
     evt.preventDefault();
 
@@ -275,16 +313,13 @@ var DownloadButton = React.createClass({
     */
   },
   render: function () {
-    var btnStyles = {
-      width: "50px",
-      height: "50px",
-      float: "left"
-    };
-
     return (
-      <button onClick={this.handleClick} style={btnStyles} url={this.props.url}>
-        Download
-      </button>
+      <div className="list-item-buttons">
+        <i className="icon-floppy" onClick={this.downloadClick} url={this.props.url}></i>
+        <i className="icon-video-1" onClick={this.downloadClick} url={this.props.url}></i>
+        <i className="icon-link" onClick={this.downloadClick} url={this.props.url}></i>
+        <i className="icon-menu" onClick={this.downloadClick} url={this.props.url}></i>
+      </div>
     );
   }
 });
@@ -294,11 +329,12 @@ var List = React.createClass({
     var list = this.props.list.map(function (val, ind, arr) {
       return (
         <div className="list-item-container">
-          <DownloadButton url={val.url} name={val.title} />
+          <ListItemPlayer />
           <ListItem  title={val.title}
                      duration={val.duration}
                      url={val.url}
                      key={ind} />
+         {/*<ListItemButtons url={val.url} name={val.title} />*/}
         </div>
       );
     });
@@ -311,6 +347,33 @@ var List = React.createClass({
 });
 
 var ListItem = React.createClass({
+  getInitialState: function () {
+    return {
+      shortCounter: 0,
+      width_was: 0
+    }
+  },
+  componentWillReceiveProps: function () {
+    this.state.shortCounter = 0;
+  },
+  componentDidMount: function () {
+    this.trimTitleLength();
+  },
+  componentDidUpdate: function () {
+    this.trimTitleLength()
+  },
+  trimTitleLength: function () {
+    var self = this;
+    var el = ReactDOM.findDOMNode(self);
+    var size = el.getBoundingClientRect();
+    //console.log(size.width);
+    if (size.width > 300) {
+      self.setState({
+        shortCounter: self.state.shortCounter + 1,
+        width_was: size.width
+      });
+    }
+  },
   handleClick: function () {
     var self = this;
     if (player !== null) {
@@ -324,10 +387,21 @@ var ListItem = React.createClass({
   },
   render: function () {
     var self = this;
+
+    var title = self.props.title;
+
+    if (self.state.shortCounter > 1 && title.length > 20) {
+      var n = Math.pow(.9, self.state.shortCounter);
+      title = title.slice(0, Math.floor(title.length * (n) - 1)).trim();
+      self.state.title = title;
+      console.log(self.state.shortCounter);
+      title += "...";
+    }
+
     return (
       <li className="song-list-item" onClick={self.handleClick}>
-        <span className="song-title">{this.props.title}</span>
-        <span className="song-timestamp">{this.props.duration.timestamp}</span>
+        <span className="song-title">{title}</span>
+        <span className="song-timestamp">{self.props.duration.timestamp}</span>
       </li>
     );
   }

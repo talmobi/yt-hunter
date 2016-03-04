@@ -1,14 +1,15 @@
 html, body {
   margin: 0;
   padding: 0;
-  color: #222;
-  background: #222;
+  color: #f6f4da;
 
-  font-family: Helvetica, sans-serif;
+  background: #a88;
+  background: #4a4444;
 
-  background: url('/assets/bg2.jpg');
-  background-size: cover;
-  background-repeat: no-repeat;
+  font-family: "Roboto Condensed", Helvetica, sans-serif;
+
+  background: url('/assets/dark_embroidery.png');
+  background-repeat: repeat;
 
   height: 1920px;
   width: 100%;
@@ -26,37 +27,57 @@ html, body {
   margin-right: auto;
 }
 
-.search-view form input {
+#main-input {
+  position: relative;
+  display: inline-block;
   height: 40px;
-  width: 378px;
+  width: 364px;
   margin: 20px 0px;
 
   font-weight: bold;
   font-size: 18px;
 
-  color: #eee;
+  color: #f6f4da;
   font-style: normal;
 
   border: none;
   padding: 6px 12px;
   outline-style: none;
 
-  background: url('/assets/search_backup.png');
+  /* background: url('/assets/search_backup.png'); */
+
+  background-color: transparent;
+  border-bottom: solid 1px;
+
+  margin-bottom: 50px;
 }
 
-.player-view {
-  position: relative;
-  height: 28px;
-  width: 100%;
-  margin-bottom: 40px;
-  margin-top: 10px;
-}
-
-.player-view button {
+#main-input > * {
   display: inline;
-  width: 80px;
-  height: 40px;
-  font-size: 16px;
+  font-weight: bold;
+  font-size: 18px;
+
+  color: #f6f4da;
+  font-style: normal;
+
+  border: none;
+  padding: 6px 12px;
+  outline-style: none;
+}
+
+#main-input input {
+  display: inline;
+  width: 224px;
+  background-color: transparent;
+};
+
+
+#main-search-button, button {
+  display: inline;
+  background-color: #a5d1f3;
+  color: #eee;
+  border-color: red!important;
+  color: red!important;
 }
 
 .selected {
@@ -74,19 +95,50 @@ ul, ol, li {
   position: relative;
   max-width: 378px;
   width: 378px;
-  height: 50px;
+
+  height: 36px;
+  margin-top: 6px;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  border-bottom: 1px solid;
+}
+
+.list-item-container:last-child {
+  border: none;
+}
+
+.list-item-container * {
+  display: inline;
 }
 
 .song-list-item {
-  max-width: 378px;
-  position: relative;
+  font-size: 16px;
+  margin-left: 16px;
+}
+
+i {
+  font-size: 24px;
 }
 
 .song-title {
-  padding: 20px;
-  padding-top: 20px;
-  max-width: 350px;
+  display: inline-block;
+  margin-top: 6px;
 }
 
 .song-timestamp {
+  float: right;
+  margin-top: 6px;
+}
+
+
+.list-item-player {
+  float: left;
+}
+
+.list-item-buttons {
+  margin-left: 40px;
+  float: right;
 }
