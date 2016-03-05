@@ -93,6 +93,9 @@ ul, ol, li {
 .list-item-container {
   display: inline-block;
   position: relative;
+  /* max-width: 378px; */
+  /* width: 378px; */
+
   max-width: 378px;
   width: 378px;
 
@@ -116,7 +119,7 @@ ul, ol, li {
 
 .song-list-item {
   font-size: 16px;
-  margin-left: 16px;
+  width: 100%;
 }
 
 i {
@@ -126,6 +129,7 @@ i {
 .song-title {
   display: inline-block;
   margin-top: 6px;
+  margin-left: 6px;
 }
 
 .song-timestamp {
@@ -133,12 +137,11 @@ i {
   margin-top: 6px;
 }
 
-
 .list-item-player {
   float: left;
 }
 
 .list-item-buttons {
-  margin-left: 40px;
+  display: none;
   float: right;
 }

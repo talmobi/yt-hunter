@@ -2,12 +2,17 @@ var React = require('react');
 var ReactDOM = require('react-dom');
 
 // yt-player
-var player = null;
+var YT_PLAYER = null;
 
 var api = require('./api.js');
 
 var previousRequest = null;
 var previousSearch = null;
+
+var DEBUG = (
+    window.location.host.indexOf('local') >= 0 ||
+    window.location.host.indexOf('192') >= 0
+);
 
 function timeFilter (songs) {
   // song.duration.seconds
@@ -93,6 +98,13 @@ var SearchView = React.createClass({
         self.submit_search( inputEl.value, filters );
       }, 400);
     };
+
+    // debug search
+    if (DEBUG) {
+      setTimeout(function () {
+        self.submit_search( "metallica" );
+      }, 400);
+    }
   },
   submit_search: function (query, filters) {
     console.log("searching...");
@@ -123,8 +135,8 @@ var SearchView = React.createClass({
         // filter for song length, min/max
         songs = timeFilter(songs);
 
-        var splits = search_query.split(/\s+/);
         // sort for search words
+        var splits = search_query.split(/\s+/);
         for (var i = 0; i < splits.length; i++) {
           var sortWord = splits[i];
           songs.sort(function (a, b) {
@@ -220,7 +232,7 @@ var Embed = React.createClass({
     console.log("element was:" + element);
 
     window.onYouTubeIframeAPIReady = function () {
-      player = new YT.Player('embed-id', {
+      YT_PLAYER = new YT.Player('embed-id', {
         height: '300',
         width: '200',
         videoId: null,
@@ -241,12 +253,13 @@ var Embed = React.createClass({
 
       if (evt.data == 1) {
         //setTimeout(function () {
-        //  player.stopVideo();
+        //  YT_PLAYER.stopVideo();
         //}, 5000);
       }
     };
   },
   shouldComponentUpdate: function () {
+    // turn React updates off for this element -> handle manually
     return false;
   },
   render: function () {
@@ -280,16 +293,30 @@ var PLAYER_STATES = {
   loading: "icon-spin3",
 };
 var ListItemPlayer = React.createClass({
+  getDefaultProps: function () {
+    return {
+      class_name: PLAYER_STATES.stop
+    }
+  },
   render: function () {
     var keys = Object.keys(PLAYER_STATES);
-    var class_name = PLAYER_STATES[keys[keys.length * Math.random() | 0]];
+    //var class_name = PLAYER_STATES[keys[keys.length * Math.random() | 0]];
+    var class_name = this.props.class_name;
     if (class_name === PLAYER_STATES.loading) {
       class_name += " animate-spin";
     }
 
+    var self = this;
+    var val = self.props.song;
+
     return (
       <div className="list-item-player">
         <i className={class_name}></i>
+        <ListItem  title={val.title}
+                   duration={val.duration}
+                   url={val.url}
+                   key={self.props.ind + "-item"}
+                   parent={self} />
       </div>
     );
   }
@@ -336,9 +363,6 @@ var ListItemButtons = React.createClass({
   render: function () {
     return (
       <div className="list-item-buttons">
-        <i className="icon-floppy" onClick={this.downloadClick} url={this.props.url}></i>
-        <i className="icon-video-1" onClick={this.downloadClick} url={this.props.url}></i>
-        <i className="icon-link" onClick={this.downloadClick} url={this.props.url}></i>
         <i className="icon-menu" onClick={this.downloadClick} url={this.props.url}></i>
       </div>
     );
@@ -348,26 +372,26 @@ var ListItemButtons = React.createClass({
 var List = React.createClass({
   render: function () {
     var list = this.props.list.map(function (val, ind, arr) {
+      var song = val;
       return (
         <div className="list-item-container">
-          <ListItemPlayer />
-          <ListItem  title={val.title}
-                     duration={val.duration}
-                     url={val.url}
-                     key={ind} />
-         {/*<ListItemButtons url={val.url} name={val.title} />*/}
+          <ListItem title={song.title}
+                    duration={song.duration}
+                    url={song.url}
+                    key={song.title + ind} />
         </div>
-      );
-    });
+      )
+    })
+
     return (
       <ul>
         {list}
       </ul>
-    );
+    )
   }
 });
 
-var ListItem = React.createClass({
+var SongTitle = React.createClass({
   getInitialState: function () {
     return {
       shortCounter: 0,
@@ -378,17 +402,16 @@ var ListItem = React.createClass({
     this.state.shortCounter = 0;
   },
   componentDidMount: function () {
-    this.trimTitleLength();
+    this.shortenTitleLength();
   },
   componentDidUpdate: function () {
-    this.trimTitleLength()
+    this.shortenTitleLength()
   },
-  trimTitleLength: function () {
+  shortenTitleLength: function () {
     var self = this;
     var el = ReactDOM.findDOMNode(self);
     var size = el.getBoundingClientRect();
-    //console.log(size.width);
-    if (size.width > 300) {
+    if (size.width > 294) {
       self.setState({
         shortCounter: self.state.shortCounter + 1,
         width_was: size.width
@@ -396,15 +419,7 @@ var ListItem = React.createClass({
     }
   },
   handleClick: function () {
-    var self = this;
-    if (player !== null) {
-      player.stopVideo();
-      var u = self.props.url;
-      var videoId = u.slice( u.indexOf('v=') + 2 );
-      console.log("loading video: " + videoId);
-      player.loadVideoById({videoId: videoId});
-      player.playVideo();
-    };
+    // TODO select or play from parent
   },
   render: function () {
     var self = this;
@@ -415,14 +430,39 @@ var ListItem = React.createClass({
       var n = Math.pow(.9, self.state.shortCounter);
       title = title.slice(0, Math.floor(title.length * (n) - 1)).trim();
       self.state.title = title;
-      //console.log(self.state.shortCounter);
       title += "...";
     }
 
     return (
-      <li className="song-list-item" onClick={self.handleClick}>
         <span className="song-title">{title}</span>
+    );
+  }
+});
+
+var ListItem = React.createClass({
+  handleClick: function () {
+    var self = this;
+    if (YT_PLAYER !== null) {
+      YT_PLAYER.stopVideo();
+      var u = self.props.url;
+      var videoId = u.slice( u.indexOf('v=') + 2 );
+      console.log("loading video: " + videoId);
+      YT_PLAYER.loadVideoById({videoId: videoId});
+      YT_PLAYER.playVideo();
+
+      // TODO -> states?
+      self.props.parent.props.class_name = PLAYER_STATES.play;
+    }
+  },
+  render: function () {
+    var self = this;
+
+    return (
+      <li className="song-list-item" onClick={self.handleClick}>
+        <icon className="icon-play"></icon>
+        <SongTitle title={self.props.title} />
         <span className="song-timestamp">{self.props.duration.timestamp}</span>
+        <ListItemButtons url={self.props.url} name={self.props.title} />
       </li>
     );
   }

@@ -40,24 +40,26 @@ function search (query, done) {
   var q = query.split(/\s+/);
   var url = yt_search_query_uri + q.join('+');
 
-  var videos = []; // found songs
+  var found_videos_bucket = {};
 
   // page number (youtube seach query parameter)
   var page = 1;
+  var page_limit = 5;
 
   var error = null;
 
   var fns = [];
-  for (var i = 1; i < 5; i++) {
+  for (var i = 1; i < page_limit; i++) {
     fns.push(
       (function () {
-        var page = i;
+        var pageNumber = i;
         return function (callback) {
-          findVideos(url, page, function (err, _videos) {
+          findVideos(url, pageNumber, function (err, videos) {
             if (err) {
               error = new Error('error in findVideos');
             } else {
-              videos = videos.concat(_videos);
+              // can filter videos here (shouldSkip function)
+              found_videos_bucket['page-' + pageNumber] = videos;
             }
             callback(err);
           });
@@ -66,18 +68,21 @@ function search (query, done) {
     );
   };
 
-
   async.parallel(fns, function () {
-    console.log("FOUND: " + videos.length);
+    var videos = [];
+    for (var i = 1; i < page_limit; i++) {
+      var key = 'page-' + i;
+      videos = videos.concat( found_videos_bucket[key] );
+    }
+
+    console.log("async query completed ["+page_limit+"], found: " + videos.length + " songs");
     done(error, videos);
   });
 }
 
 function findVideos(url, page, done) {
-
   url += "&page=" + page;
-
-  console.log("finding songs from: " + url);
+  //console.log("finding songs from: " + url);
 
   request(url, function (err, res, body) {
     if (err) {
@@ -127,11 +132,12 @@ function shouldSkip (video) {
 
 // parse the plain text response body with jsom to pin point song information
 function parseResponse (responseText, done) {
-  console.log("parsing response with cheerio");
-
+  //var _time = Date.now();
   $ = cheerio.load(responseText);
+  //var _delta = Date.now() - _time;
+  //console.log("parsing response with cheerio, took: " + _delta + " ms");
   var titles = $('.yt-lockup-title');
-  console.log("titles length: " + titles.length);
+  //console.log("titles length: " + titles.length);
   var songs = [];
 
   for (var i = 0; i < titles.length; i++) {
@@ -152,11 +158,11 @@ function parseResponse (responseText, done) {
     songs.push(song);
   };
 
-  console.log(songs[0]);
+  //console.log(songs[0]);
 
   done(null, songs);
 
-  /*
+  /* using cheerio instead of jsdom (about 8x faster)
      jsdom.env(responseText, function (err, window) {
      var document = window.document;
 
