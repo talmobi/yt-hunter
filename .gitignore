@@ -1,6 +1,7 @@
 node_modules/
 *.swp
 *.swo
+*.DS_STORE
 videos/
 songs/
 data/

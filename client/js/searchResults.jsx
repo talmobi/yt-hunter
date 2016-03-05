@@ -274,6 +274,17 @@ var Embed = React.createClass({
         }
       }
 
+      if (evt.data == 0) { // ended
+        if (__last_item) {
+          __last_item.setIconState(PLAYER_STATES.replay);
+          __last_item.setState({
+            current_position: __last_item.props.duration.seconds
+          });
+          __last_item = null;
+          __last_video_id = null;
+        }
+      }
+
       if (evt.data == 1) {
         //setTimeout(function () {
         //  YT_PLAYER.stopVideo();
@@ -314,6 +325,7 @@ var PLAYER_STATES = {
   stop: "icon-stop",
   pause: "icon-pause",
   loading: "icon-spin3",
+  replay: "icon-cw",
 };
 var ListItemPlayer = React.createClass({
   getDefaultProps: function () {
