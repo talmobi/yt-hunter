@@ -81,7 +81,8 @@ html, body {
 }
 
 .selected {
-  background-color: pink;
+  /*background-color: pink;*/
+  color: lightblue;
 }
 
 ul, ol, li {

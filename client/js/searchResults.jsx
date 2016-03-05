@@ -3,6 +3,7 @@ var ReactDOM = require('react-dom');
 
 // yt-player
 var YT_PLAYER = null;
+var __last_video_id = null;
 
 var api = require('./api.js');
 
@@ -13,6 +14,22 @@ var DEBUG = (
     window.location.host.indexOf('local') >= 0 ||
     window.location.host.indexOf('192') >= 0
 );
+
+function secondsToTimestamp (seconds) {
+  var minutes = (seconds / 60) | 0;
+  var hours = (minutes / 60) | 0;
+  var seconds = seconds % 60;
+  var stamp = "";
+  if (hours > 0) {
+    stamp += hours + ":";
+  }
+  stamp += minutes + ":";
+  if (seconds < 10) {
+    stamp += "0";
+  }
+  stamp += seconds;
+  return stamp;
+};
 
 function timeFilter (songs) {
   // song.duration.seconds
@@ -102,8 +119,8 @@ var SearchView = React.createClass({
     // debug search
     if (DEBUG) {
       setTimeout(function () {
-        self.submit_search( "metallica" );
-      }, 400);
+        self.submit_search( "popcorn mix" );
+      }, 1000);
     }
   },
   submit_search: function (query, filters) {
@@ -251,6 +268,12 @@ var Embed = React.createClass({
       console.log("readyStateChange: ----------------------------");
       console.log(evt);
 
+      if (evt.data == YT.PlayerState.PLAYING) {
+        if (__last_item) {
+          __last_item.setIconState(PLAYER_STATES.pause);
+        }
+      }
+
       if (evt.data == 1) {
         //setTimeout(function () {
         //  YT_PLAYER.stopVideo();
@@ -299,6 +322,8 @@ var ListItemPlayer = React.createClass({
     }
   },
   render: function () {
+    var self = this;
+
     var keys = Object.keys(PLAYER_STATES);
     //var class_name = PLAYER_STATES[keys[keys.length * Math.random() | 0]];
     var class_name = this.props.class_name;
@@ -306,18 +331,9 @@ var ListItemPlayer = React.createClass({
       class_name += " animate-spin";
     }
 
-    var self = this;
-    var val = self.props.song;
 
     return (
-      <div className="list-item-player">
-        <i className={class_name}></i>
-        <ListItem  title={val.title}
-                   duration={val.duration}
-                   url={val.url}
-                   key={self.props.ind + "-item"}
-                   parent={self} />
-      </div>
+      <icon className={class_name}></icon>
     );
   }
 });
@@ -439,29 +455,84 @@ var SongTitle = React.createClass({
   }
 });
 
+var __last_item = null;
 var ListItem = React.createClass({
+  getInitialState: function () {
+    return {
+      icon_state: PLAYER_STATES.play,
+      paused_position: 0,
+      current_position: 0,
+    }
+  },
   handleClick: function () {
     var self = this;
+
     if (YT_PLAYER !== null) {
       YT_PLAYER.stopVideo();
       var u = self.props.url;
       var videoId = u.slice( u.indexOf('v=') + 2 );
-      console.log("loading video: " + videoId);
-      YT_PLAYER.loadVideoById({videoId: videoId});
-      YT_PLAYER.playVideo();
 
-      // TODO -> states?
-      self.props.parent.props.class_name = PLAYER_STATES.play;
+      if (__last_video_id == videoId) { // same song -> pause/play
+        if(self.state.icon_state != PLAYER_STATES.play) {
+          // not paused -> pause instead of playing
+          console.log("pausing video: " + videoId);
+          self.state.paused_position = YT_PLAYER.getCurrentTime();
+          YT_PLAYER.pauseVideo();
+          return self.setIconState(PLAYER_STATES.play);
+        } else {
+          // paused -> contnue to play
+          YT_PLAYER.playVideo();
+          var seconds = self.state.paused_position | 0;
+          YT_PLAYER.seekTo( seconds, true );
+          console.log("continuing video: " + videoId + ", at: " + seconds);
+          return self.setIconState(PLAYER_STATES.pause);
+        }
+
+      } else { // new song -> load new song
+        // load and play
+        console.log("loading video: " + videoId);
+        YT_PLAYER.loadVideoById({videoId: videoId});
+        YT_PLAYER.playVideo();
+        __last_video_id = videoId;
+
+        if (__last_item) {
+          // reset the last item
+          __last_item.setState({current_position: 0});
+          __last_item.setIconState(PLAYER_STATES.play);
+        }
+        self.setIconState(PLAYER_STATES.loading);
+        __last_item = self;
+      }
     }
+  },
+  setIconState: function (state) {
+    this.setState({
+      icon_state: state
+    });
   },
   render: function () {
     var self = this;
 
+    var u = self.props.url;
+    var videoId = u.slice( u.indexOf('v=') + 2 );
+    var selected = __last_video_id == videoId;
+    var css = "song-list-item";
+    if (selected) {
+      css += " selected";
+    }
+
+    var secs = YT_PLAYER.getCurrentTime();
+    var timestamp = self.props.duration.timestamp;
+    if (self.state.current_position > 0 && selected) {
+      var secs = self.state.current_position | 0;
+      timestamp = secondsToTimestamp(secs) + "/" + self.props.duration.timestamp;
+    }
+
     return (
-      <li className="song-list-item" onClick={self.handleClick}>
-        <icon className="icon-play"></icon>
+      <li className={css} onClick={self.handleClick}>
+        <ListItemPlayer class_name={self.state.icon_state} />
         <SongTitle title={self.props.title} />
-        <span className="song-timestamp">{self.props.duration.timestamp}</span>
+        <span className="song-timestamp">{timestamp}</span>
         <ListItemButtons url={self.props.url} name={self.props.title} />
       </li>
     );
@@ -478,5 +549,20 @@ var Component = React.createClass({
     );
   }
 });
+
+// current_position feeder
+var current_position_updater = function () {
+  if (__last_item && YT_PLAYER) {
+    var secs = YT_PLAYER.getCurrentTime();
+    if (secs > 0) {
+      __last_item.setState({
+        current_position: secs
+      })
+    }
+  }
+  //console.log("position feeder looping");
+  setTimeout(current_position_updater, 100);
+};
+setTimeout(current_position_updater, 100);
 
 module.exports = Component;
