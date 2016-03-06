@@ -8,6 +8,7 @@ var __last_video_id = null;
 var api = require('./api.js');
 
 var inputWatermarkText = "";
+var __max_title_width = 284;
 
 var previousRequest = null;
 var previousSearch = null;
@@ -370,8 +371,6 @@ var Embed = React.createClass({
           __last_item.setState({
             current_position: __last_item.props.duration.seconds
           });
-          __last_item = null;
-          __last_video_id = null;
         }
       }
 
@@ -529,7 +528,7 @@ var SongTitle = React.createClass({
     var self = this;
     var el = ReactDOM.findDOMNode(self);
     var size = el.getBoundingClientRect();
-    if (size.width > 294) {
+    if (size.width > __max_title_width) {
       self.setState({
         shortCounter: self.state.shortCounter + 1,
         width_was: size.width
@@ -542,10 +541,10 @@ var SongTitle = React.createClass({
   render: function () {
     var self = this;
 
-    var title = self.props.title;
+    var title = self.props.title.trim();
 
     if (self.state.shortCounter > 1 && title.length > 20) {
-      var n = Math.pow(.9, self.state.shortCounter);
+      var n = Math.pow(.92, self.state.shortCounter);
       title = title.slice(0, Math.floor(title.length * (n) - 1)).trim();
       self.state.title = title;
       title += "...";
@@ -575,21 +574,32 @@ var ListItem = React.createClass({
       var videoId = u.slice( u.indexOf('v=') + 2 );
 
       if (__last_video_id == videoId) { // same song -> pause/play
-        if(self.state.icon_state != PLAYER_STATES.play) {
-          // not paused -> pause instead of playing
+        if(self.state.icon_state == PLAYER_STATES.play) {
+          // is playing -> pause instead of playing
           console.log("pausing video: " + videoId);
           self.state.paused_position = YT_PLAYER.getCurrentTime();
           YT_PLAYER.pauseVideo();
           return self.setIconState(PLAYER_STATES.play);
-        } else {
-          // paused -> contnue to play
+        } else if (self.state.icon_state == PLAYER_STATES.pause) {
+          // is paused -> contnue to play
           YT_PLAYER.playVideo();
           var seconds = self.state.paused_position | 0;
           YT_PLAYER.seekTo( seconds, true );
           console.log("continuing video: " + videoId + ", at: " + seconds);
           return self.setIconState(PLAYER_STATES.pause);
+        } else if (self.state.icon_state == PLAYER_STATES.replay) {
+          // seek to start and play
+          YT_PLAYER.seekTo( 0, true );
+          YT_PLAYER.playVideo();
+          console.log("replaying video: " + videoId);
+          return self.setIconState(PLAYER_STATES.pause);
+        } else {
+          // unknown -> reset last_video
+          console.log("unknown icon_state -> resetting song");
+          __last_video_id = null;
+          __last_item = null;
+          return self.handleClick();
         }
-
       } else { // new song -> load new song
         // load and play
         console.log("loading video: " + videoId);

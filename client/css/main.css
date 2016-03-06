@@ -44,6 +44,7 @@ html, body {
 
   background-color: transparent;
   border-bottom: solid 1px lightblue;
+  border-bottom: solid 1px #f6f4da;
 
   margin-bottom: 50px;
 }

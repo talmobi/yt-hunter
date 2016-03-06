@@ -101,7 +101,7 @@ function queryToCacheKey (query) {
 };
 
 /**
- * 
+ * Main
  */
 function search (query, done) {
   console.log("query: " + query);
