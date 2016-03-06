@@ -31,7 +31,7 @@ html, body {
   position: relative;
   display: inline-block;
   height: 40px;
-  width: 364px;
+  width: 354px;
   margin: 20px 0px;
 
   font-weight: bold;
@@ -40,44 +40,51 @@ html, body {
   color: #f6f4da;
   font-style: normal;
 
-  border: none;
-  padding: 6px 12px;
-  outline-style: none;
-
   /* background: url('/assets/search_backup.png'); */
 
   background-color: transparent;
-  border-bottom: solid 1px;
+  border-bottom: solid 1px lightblue;
 
   margin-bottom: 50px;
 }
 
 #main-input > * {
-  display: inline;
-  font-weight: bold;
+  height: 100%;
   font-size: 18px;
-
-  color: #f6f4da;
-  font-style: normal;
-
-  border: none;
-  padding: 6px 12px;
-  outline-style: none;
 }
 
 #main-input input {
-  display: inline;
-  width: 224px;
+  border: none;
+  outline-style: none;
+
+  width: 212px;
+  font-family: "Roboto Condensed", Helvetica, sans-serif;
+
   background-color: transparent;
-};
+  color: #f6f4da;
+
+  margin-left: 4px;
+}
+
+#main-input > input:focus {
+}
 
 
-#main-search-button, button {
+#main-search-button {
   display: inline;
-  background-color: #a5d1f3;
-  color: #eee;
-  border-color: red!important;
-  color: red!important;
+
+  background: #a88;
+  background: #4a4444;
+  background: transparent;
+  color: #f6f4da;
+
+  border: 1px solid white;
+  border-radius: 6px;
+
+  display: none;
+}
+
+.icon-search {
 }
 
 .selected {

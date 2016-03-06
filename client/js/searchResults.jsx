@@ -7,6 +7,8 @@ var __last_video_id = null;
 
 var api = require('./api.js');
 
+var inputWatermarkText = "";
+
 var previousRequest = null;
 var previousSearch = null;
 
@@ -42,6 +44,93 @@ function timeFilter (songs) {
   });
 };
 
+function sortSongs (search_query, songs) {
+  // sort for search words
+  var splits = search_query.split(/\s+/);
+  for (var i = 0; i < splits.length; i++) {
+    var sortWord = splits[i];
+    songs.sort(function (a, b) {
+      var at = a.title.toLowerCase();
+      if (at.indexOf( sortWord ) >= 0) {
+        //console.log("found ost: " + at);
+        return 1;
+      }
+      var bt = b.title.toLowerCase();
+      if (bt.indexOf( sortWord ) >= 0) {
+        //console.log("found ost: " + bt);
+        return -1;
+      }
+      return 0;
+    });
+  }
+  songs.reverse();
+};
+
+function toSearchQuery (query) {
+  var q = [];
+  var strings = query.split(/\s+/);
+  for (var i = 0; i < strings.length; i++) {
+    var string = strings[i];
+    var c = string[0];
+    if (c == '!') {
+      continue; // dont add exclusions to query
+    }
+    q.push( toAlphaNumeric( string ) );
+  }
+  return q.join(' ');
+};
+
+function grabExcludes (query) {
+  var excludes = [];
+  var strings = query.split(/\s+/);
+  for (var i = 0; i < strings.length; i++) {
+    var string = strings[i];
+    if (string[0] == '!' && !string[1] != '!') {
+      var exclusion = string.slice(1);
+      excludes.push( exclusion );
+    }
+  }
+  return excludes;
+};
+
+function toAlphaNumeric (string) {
+  return string.replace(/\W/g, '');
+};
+
+function grabIncludes (query) {
+  var includes = [];
+  var strings = query.split(/\s+/);
+  for (var i = 0; i < strings.length; i++) {
+    var string = strings[i];
+    if (string[0] == "'" || string[0] == '"') {
+      includes.push( toAlphaNumeric( string.slice(1) ) );
+    }
+  }
+  return includes;
+};
+
+function shouldFilterSong (filters, song) {
+  var title = song.title.toUpperCase();
+
+  var excludes_test = false;
+  if (filters.exclude.length > 0) {
+    excludes_test = !!filters.exclude.find(function (val, ind, arr) {
+      var str = val.toUpperCase();
+      return title.indexOf(str) >= 0;
+    });
+  }
+
+  var includes_test = false;
+  if (filters.include.length > 0) {
+    includes_test = !filters.include.find(function (val, ind, arr) {
+      var str = val.toUpperCase();
+      return title.indexOf(str) >= 0;
+    });
+  }
+
+  return (excludes_test || includes_test);
+};
+
 var SearchView = React.createClass({
   getInitialState: function () {
     return {
@@ -52,7 +141,6 @@ var SearchView = React.createClass({
   },
   componentDidMount: function () {
     var self = this;
-    var inputWatermarkText = "Search for any song";
 
     var inputEl = self.refs.inputEl;
     inputEl.value = inputWatermarkText;
@@ -118,13 +206,16 @@ var SearchView = React.createClass({
 
     // debug search
     if (DEBUG) {
-      setTimeout(function () {
-        self.submit_search( "popcorn mix" );
-      }, 1000);
+      window.document.addEventListener("DOMContentLoaded", function () {
+        console.log(" >>>> DOCUMENT READY <<<< ");
+        setTimeout(function () {
+          self.submit_search( "popcorn mix" );
+        }, 400);
+      })
     }
   },
   submit_search: function (query, filters) {
-    console.log("searching...");
+    console.log("searching... ["+query+"]");
     var self = this;
 
     if (previousSearch == query) {
@@ -133,7 +224,6 @@ var SearchView = React.createClass({
     previousSearch = query;
 
     //var inputEl = self.refs.inputEl;
-    var search_query = query;
     //inputEl.value = "";
 
     if (previousRequest) {
@@ -142,8 +232,17 @@ var SearchView = React.createClass({
     };
 
     //opts.filters = {include: [], exclude: []};
+    var post_excludes = grabExcludes( query );
+    var post_includes = grabIncludes( query );
+    var post_filters = {
+      include: post_includes,
+      exclude: post_excludes
+    }
+    console.log(post_excludes);
 
-    api.search(search_query, function (err, songs) {
+    var search_query = toSearchQuery( query );
+
+    previousRequest = api.search(search_query, function (err, songs) {
       if (err) {
         console.log("search failed: " + err);
       } else {
@@ -152,25 +251,15 @@ var SearchView = React.createClass({
         // filter for song length, min/max
         songs = timeFilter(songs);
 
-        // sort for search words
-        var splits = search_query.split(/\s+/);
-        for (var i = 0; i < splits.length; i++) {
-          var sortWord = splits[i];
-          songs.sort(function (a, b) {
-            var at = a.title.toLowerCase();
-            if (at.indexOf( sortWord ) >= 0) {
-              //console.log("found ost: " + at);
-              return 1;
-            }
-            var bt = b.title.toLowerCase();
-            if (bt.indexOf( sortWord ) >= 0) {
-              //console.log("found ost: " + bt);
-              return -1;
-            }
-            return 0;
-          });
-        }
-        songs.reverse();
+
+        // TODO stricter filters based on input
+        songs = songs.filter(function (val, ind, arr) {
+          var song = val;
+          return !shouldFilterSong(post_filters, song);
+        })
+
+        // do basic sorting based on title relevance and likeness to search_query
+        sortSongs(search_query, songs);
 
         self.setState({
           list: songs
@@ -212,7 +301,8 @@ var SearchView = React.createClass({
       <div className="search-view">
         <form onSubmit={self.onSubmit}>
           <div id="main-input">
-            <input type="text" ref="inputEl" />
+            <icon className="icon-search" />
+            <input type="text" ref="inputEl"></input>
             <button className="icon-search" id="main-search-button" type="submit">
               Search
             </button>
@@ -533,9 +623,8 @@ var ListItem = React.createClass({
       css += " selected";
     }
 
-    var secs = YT_PLAYER.getCurrentTime();
     var timestamp = self.props.duration.timestamp;
-    if (self.state.current_position > 0 && selected) {
+    if (self.state.current_position > 0 && selected && YT_PLAYER) {
       var secs = self.state.current_position | 0;
       timestamp = secondsToTimestamp(secs) + "/" + self.props.duration.timestamp;
     }
@@ -564,7 +653,7 @@ var Component = React.createClass({
 
 // current_position feeder
 var current_position_updater = function () {
-  if (__last_item && YT_PLAYER) {
+  if (__last_item && YT_PLAYER && YT_PLAYER.getCurrentTime) {
     var secs = YT_PLAYER.getCurrentTime();
     if (secs > 0) {
       __last_item.setState({

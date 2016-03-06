@@ -3,6 +3,8 @@ var ReactDOM = require('react-dom');
 
 var SearchResults = require('./searchResults.jsx');
 
+// TODO download progress, buttons and overlay
+
 var socket = require('socket.io-client')();
 socket.on('connect', function () {
   console.log("io connected");

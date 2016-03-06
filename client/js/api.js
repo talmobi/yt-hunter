@@ -24,6 +24,8 @@ api.search = function (query, done) {
   };
 
   req.send();
+
+  return req;
 };
 
 module.exports = api;
