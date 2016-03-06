@@ -432,7 +432,6 @@ var ListItemPlayer = React.createClass({
       class_name += " animate-spin";
     }
 
-
     return (
       <icon className={class_name}></icon>
     );
@@ -574,13 +573,13 @@ var ListItem = React.createClass({
       var videoId = u.slice( u.indexOf('v=') + 2 );
 
       if (__last_video_id == videoId) { // same song -> pause/play
-        if(self.state.icon_state == PLAYER_STATES.play) {
+        if(self.state.icon_state == PLAYER_STATES.pause) {
           // is playing -> pause instead of playing
           console.log("pausing video: " + videoId);
           self.state.paused_position = YT_PLAYER.getCurrentTime();
           YT_PLAYER.pauseVideo();
           return self.setIconState(PLAYER_STATES.play);
-        } else if (self.state.icon_state == PLAYER_STATES.pause) {
+        } else if (self.state.icon_state == PLAYER_STATES.play) {
           // is paused -> contnue to play
           YT_PLAYER.playVideo();
           var seconds = self.state.paused_position | 0;
