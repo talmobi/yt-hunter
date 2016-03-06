@@ -5,6 +5,72 @@ var yt_search_query_uri =  "https://www.youtube.com/results?search_query=";
 
 var async = require('async');
 
+// simple json in memory cache
+function simpleCache (opts) {
+  var params = {
+    // default ttl for keys
+    ttl: 0, // infinite
+
+    // time interval to check for and delete expired keys
+    interval: 60 * 1000, // in milliseconds
+  }
+  params.ttl = opts.ttl || params.ttl;
+  params.interval = opts.interval || params.interval;
+
+  // in memory json object for storage
+  var db = {}
+
+  var timeout = function () {
+    console.log("cache garbage collection");
+    var count = 0;
+    var now = Date.now();
+    var keys = Object.keys(db);
+    for (var i = 0; i < keys.length; i++) {
+      var key = keys[i];
+      var data = db[key];
+      if (now > data.__expires_at) {
+        delete db[key];
+        count++;
+      }
+    }
+
+    console.log("trashed " + count + " keys");
+    setTimeout(timeout, params.interval);
+  };
+  timeout();
+
+  return {
+    get: function (key) {
+      var now = Date.now();
+      var data = db[key];
+      if (data && (data.__expires_at > now || !data.__expires_at)) {
+        return data.value;
+      }
+      return null;
+    },
+
+    put: function (key, value, ttl) {
+      var now = Date.now();
+      var ttl = ttl || params.ttl;
+      var data = {
+        value: value,
+        __created_at: now,
+        __expires_at: now + ttl
+      }
+      db[key] = data;
+    },
+
+    del: function (key) {
+      db[key] = "";
+      delete db[key];
+    }
+  }
+};
+var cache = simpleCache({
+  ttl: 1000 * 60,
+  interval: 60 * 3 * 1000
+});
+
 // settings
 var _opts = {
   min_results: 80,
@@ -30,11 +96,24 @@ function opts (opts) {
   };
 };
 
+function queryToCacheKey (query) {
+  return query.replace(/\W/g);
+};
+
 /**
  * 
  */
 function search (query, done) {
   console.log("query: " + query);
+
+  // check cache
+  var cacheKey = queryToCacheKey( query );
+  var _cached_videos = cache.get( cacheKey );
+  if (_cached_videos) {
+    console.log("responding from cache");
+    return done(null, _cached_videos);
+  }
+
   var response = null;
 
   var q = query.split(/\s+/);
@@ -76,6 +155,8 @@ function search (query, done) {
     }
 
     console.log("async query completed ["+page_limit+"], found: " + videos.length + " songs");
+    // save to cache
+    cache.put( cacheKey, videos );
     done(error, videos);
   });
 }
