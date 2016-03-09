@@ -541,10 +541,16 @@ var SongTitle = React.createClass({
     var self = this;
 
     var title = self.props.title.trim();
+    var l = 65;
+    if (title.length > l) {
+      title = title.slice(0, l);
+      //console.log("large title");
+    }
 
     if (self.state.shortCounter > 1 && title.length > 20) {
       var n = Math.pow(.92, self.state.shortCounter);
-      title = title.slice(0, Math.floor(title.length * (n) - 1)).trim();
+      //title = title.slice(0, Math.floor(title.length * (n) - 1)).trim();
+      title = title.slice(0, title.length - self.state.shortCounter * 1).trim();
       self.state.title = title;
       title += "...";
     }
@@ -662,7 +668,7 @@ var Component = React.createClass({
 
 // current_position feeder
 var current_position_updater = function () {
-  if (__last_item && YT_PLAYER && YT_PLAYER.getCurrentTime) {
+  if (__last_item && __last_item.isMounted() && YT_PLAYER && YT_PLAYER.getCurrentTime) {
     var secs = YT_PLAYER.getCurrentTime();
     if (secs > 0) {
       __last_item.setState({

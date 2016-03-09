@@ -31,7 +31,7 @@ html, body {
   position: relative;
   display: inline-block;
   height: 40px;
-  width: 354px;
+  width: 378px;
   margin: 20px 0px;
 
   font-weight: bold;
@@ -58,7 +58,7 @@ html, body {
   border: none;
   outline-style: none;
 
-  width: 212px;
+  width: 342px;
   font-family: "Roboto Condensed", Helvetica, sans-serif;
 
   background-color: transparent;
