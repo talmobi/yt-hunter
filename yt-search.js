@@ -1,74 +1,12 @@
 var cheerio = require('cheerio');
 var request = require('request');
+var async = require('async');
 
 var yt_search_query_uri =  "https://www.youtube.com/results?search_query=";
 
-var async = require('async');
-
-// simple json in memory cache
-function simpleCache (opts) {
-  var params = {
-    // default ttl for keys
-    ttl: 0, // infinite
-
-    // time interval to check for and delete expired keys
-    interval: 60 * 1000, // in milliseconds
-  }
-  params.ttl = opts.ttl || params.ttl;
-  params.interval = opts.interval || params.interval;
-
-  // in memory json object for storage
-  var db = {}
-
-  var timeout = function () {
-    console.log("cache garbage collection");
-    var count = 0;
-    var now = Date.now();
-    var keys = Object.keys(db);
-    for (var i = 0; i < keys.length; i++) {
-      var key = keys[i];
-      var data = db[key];
-      if (now > data.__expires_at) {
-        delete db[key];
-        count++;
-      }
-    }
-
-    console.log("trashed " + count + " keys");
-    setTimeout(timeout, params.interval);
-  };
-  timeout();
-
-  return {
-    get: function (key) {
-      var now = Date.now();
-      var data = db[key];
-      if (data && (data.__expires_at > now || !data.__expires_at)) {
-        return data.value;
-      }
-      return null;
-    },
-
-    put: function (key, value, ttl) {
-      var now = Date.now();
-      var ttl = ttl || params.ttl;
-      var data = {
-        value: value,
-        __created_at: now,
-        __expires_at: now + ttl
-      }
-      db[key] = data;
-    },
-
-    del: function (key) {
-      db[key] = "";
-      delete db[key];
-    }
-  }
-};
-var cache = simpleCache({
-  ttl: 1000 * 60,
-  interval: 60 * 3 * 1000
+var cache = require('short-storage').Storage({
+  ttl: 1000 * 60 * 5,
+  interval: 60 * 10 * 1000
 });
 
 // settings
@@ -96,6 +34,7 @@ function opts (opts) {
   };
 };
 
+// simplify and generalize the key for caching the search query
 function queryToCacheKey (query) {
   return query.replace(/\W/g);
 };
@@ -182,6 +121,8 @@ function shouldSkip (video) {
 
   var duration = video.duration.seconds || video.duration;
   var title = video.title.toUpperCase();
+
+  // filters for duration here
 
   //var excludes = false;
   //if (filters.exclude.length > 0) {

@@ -6,6 +6,7 @@ var SearchResults = require('./searchResults.jsx');
 
 // TODO download progress, buttons and overlay
 
+// setup redux store
 const initialState = {
   search: '',
   results: []
