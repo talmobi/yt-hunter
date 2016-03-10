@@ -16,7 +16,7 @@
   "bugs": {
     "url": "https://github.com/talmobi/yt-hunter/issues"
   },
-  "author": "talmobi",
+  "author": "talmobi <talmo.christian@gmail.com>",
   "email": "talmo.christian@gmail.com",
   "license": "MIT",
   "dependencies": {
@@ -27,6 +27,7 @@
     "jfs": "^0.2.6",
     "react": "^0.14.3",
     "react-dom": "^0.14.3",
+    "redux": "^3.3.1",
     "request": "^2.67.0",
     "socket.io": "^1.4.5",
     "socket.io-client": "^1.4.5",
@@ -37,6 +38,7 @@
   "devDependencies": {
     "babel-preset-react": "^6.3.13",
     "babelify": "^7.2.0",
+    "deep-freeze": "0.0.1",
     "livereloadx": "^0.3.9"
   }
 }

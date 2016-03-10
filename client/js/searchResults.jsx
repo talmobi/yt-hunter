@@ -13,6 +13,39 @@ var __max_title_width = 284;
 var previousRequest = null;
 var previousSearch = null;
 
+var __submitQuerySearch = null;
+var __play_query = null;
+
+var on_search_success = (function () {
+  var listeners = [];
+  var on = function (l) {
+    console.log("listener subbed!");
+    listeners.push(l);
+
+    // return unsubsribe
+    return function () {
+      console.log("listener unsubscribed");
+      var ind = listeners.indexOf(l);
+      listeners.splice(ind, 1);
+    };
+  };
+
+  var trigger = function () {
+    console.log("on search succes TRIGGERED!");
+    listeners.forEach(function (val, ind, arr) {
+      if (typeof val === 'function')
+        val();
+    });
+  };
+
+  return {
+    on: on,
+    add: on,
+    trigger: trigger,
+    dispatch: trigger
+  };
+})();
+
 var DEBUG = (
     window.location.host.indexOf('local') >= 0 ||
     window.location.host.indexOf('192') >= 0
@@ -73,8 +106,15 @@ function toSearchQuery (query) {
   for (var i = 0; i < strings.length; i++) {
     var string = strings[i];
     var c = string[0];
+    var c2 = string[1];
     if (c == '!') {
-      continue; // dont add exclusions to query
+      if (c2 == '!') {
+        // special case double bang, add to query (remove the bangs first)
+        // '!!word' is the same as 'word !word' (add to search but exclude from results)
+        string = string.slice(2);
+      } else {
+        continue; // dont add single bang exclusions to query
+      }
     }
     q.push( toAlphaNumeric( string ) );
   }
@@ -88,6 +128,10 @@ function grabExcludes (query) {
     var string = strings[i];
     if (string[0] == '!' && !string[1] != '!') {
       var exclusion = string.slice(1);
+      excludes.push( exclusion );
+    }
+    if (string[0] == '!' && string[1] == '!') {
+      var exclusion = string.slice(2);
       excludes.push( exclusion );
     }
   }
@@ -104,7 +148,10 @@ function grabIncludes (query) {
   for (var i = 0; i < strings.length; i++) {
     var string = strings[i];
     if (string[0] == "'" || string[0] == '"') {
-      includes.push( toAlphaNumeric( string.slice(1) ) );
+      var str = toAlphaNumeric( string.slice(1) ).trim();
+      if (str.length > 0) {
+        includes.push( str );
+      }
     }
   }
   return includes;
@@ -116,7 +163,7 @@ function shouldFilterSong (filters, song) {
   var excludes_test = false;
   if (filters.exclude.length > 0) {
     excludes_test = !!filters.exclude.find(function (val, ind, arr) {
-      var str = val.toUpperCase();
+      var str = val.toUpperCase().trim();
       return title.indexOf(str) >= 0;
     });
   }
@@ -124,7 +171,7 @@ function shouldFilterSong (filters, song) {
   var includes_test = false;
   if (filters.include.length > 0) {
     includes_test = !filters.include.find(function (val, ind, arr) {
-      var str = val.toUpperCase();
+      var str = val.toUpperCase().trim();
       return title.indexOf(str) >= 0;
     });
   }
@@ -133,14 +180,8 @@ function shouldFilterSong (filters, song) {
 };
 
 var SearchView = React.createClass({
-  getInitialState: function () {
-    return {
-      list: [],
-      includes: [],
-      excludes: []
-    };
-  },
   componentDidMount: function () {
+    // setup input element
     var self = this;
 
     var inputEl = self.refs.inputEl;
@@ -155,70 +196,78 @@ var SearchView = React.createClass({
       inputEl.value = "";
     }
 
-    var includesEl = self.refs.includesEl;
-    includesEl.oninput = includesEl.onchange = function () {
-      self.setState({
-        includes: includesEl.value.split(/\s+/)
-      });
-    };
-
-    var excludesEl = self.refs.excludesEl;
-    excludesEl.oninput = excludesEl.onchange = function () {
-      self.setState({
-        excludes: excludesEl.value.split(/\s+/)
-      });
-    };
-
     var submit_timeout = null;
     inputEl.oninput = inputEl.onchange = function () {
+      if (inputEl.value.length <= 0) {
+        return; // no reason to search empty strings
+      }
+
       console.log("submit_timeout triggered");
       if (submit_timeout) {
         clearTimeout(submit_timeout);
       }
 
-      if (inputEl.value.length <= 0) {
-        return; // no reason to search empty strings
-      }
-
       submit_timeout = setTimeout(function () {
-        if (inputEl.value.length < 1) {
-          // show message? TODO
-          return;
+        self.submit_search ( inputEl.value );
+      } , 1500);
+    }
+
+    // setup query search and auto play from querystring if exists
+    var _querySearch = function () {
+      var query = window.location.search.substring(1);
+      if (!query) return;
+      query = decodeURI(query);
+
+      var q = {};
+      query.split('&').forEach(function (val, ind, arr) {
+        var s = val.split('=');
+        var key = s[0];
+        var value = s[1];
+        if (key && value) {
+          q[key] = value;
         }
+      });
+      q.search = q.search.split('+').join(' ');
+      console.log(q);
 
-        var includesEl = self.refs.includesEl;
-        var excludesEl = self.refs.excludesEl;
-
-        var i = includesEl.value.split(/\s+/).filter(function (val) {
-          return !!val;
-        });
-        var e = excludesEl.value.split(/\s+/).filter(function (val) {
-          return !!val;
-        });
-
-        var filters = {
-          include: i,
-          exclude: e
+      // add query auto play listeners
+      var unsub = on_search_success.on(function () {
+        __play_query = function () {
+          console.log("playing query play");
+          var list = document.getElementsByClassName('song-list-item');
+          list[ q.play ].click();
         };
+        if (YT_PLAYER && YT_PLAYER.playVideo) {
+          __play_query();
+        }
+        unsub();
+      });
 
-        self.submit_search( inputEl.value, filters );
-      }, 400);
+      console.log("_querySearching...");
+      self.submit_search( q.search );
+      inputEl.value = q.search;
     };
 
-    // debug search
-    if (DEBUG) {
-      window.document.addEventListener("DOMContentLoaded", function () {
-        console.log(" >>>> DOCUMENT READY <<<< ");
-        setTimeout(function () {
-          self.submit_search( "popcorn mix" );
-        }, 400);
-      })
+    var docHidden = true;
+    if (document.hidden !== 'undefined') {
+      docHidden = document.hidden;
+    } else {
+      // backup
+      docHidden = !document.hasFocus();
     }
+
+    if (docHidden) {
+      window.addEventListener('focus', _querySearch);
+    } else {
+      setTimeout(_querySearch, 200);
+    }
+
   },
   submit_search: function (query, filters) {
-    console.log("searching... ["+query+"]");
     var self = this;
+    console.log("searching... ["+query+"]");
 
+    // ignore duplicate queries
     if (previousSearch == query) {
       return false;
     };
@@ -227,11 +276,6 @@ var SearchView = React.createClass({
     //var inputEl = self.refs.inputEl;
     //inputEl.value = "";
 
-    if (previousRequest) {
-      previousRequest.abort();
-      previousRequest = null;
-    };
-
     //opts.filters = {include: [], exclude: []};
     var post_excludes = grabExcludes( query );
     var post_includes = grabIncludes( query );
@@ -239,10 +283,14 @@ var SearchView = React.createClass({
       include: post_includes,
       exclude: post_excludes
     }
-    console.log(post_excludes);
 
+    // remove filters from the search query
     var search_query = toSearchQuery( query );
-
+    // cancel previous searches that haven't returned yet
+    if (previousRequest) {
+      previousRequest.abort();
+      previousRequest = null;
+    };
     previousRequest = api.search(search_query, function (err, songs) {
       if (err) {
         console.log("search failed: " + err);
@@ -251,7 +299,6 @@ var SearchView = React.createClass({
 
         // filter for song length, min/max
         songs = timeFilter(songs);
-
 
         // TODO stricter filters based on input
         songs = songs.filter(function (val, ind, arr) {
@@ -262,9 +309,15 @@ var SearchView = React.createClass({
         // do basic sorting based on title relevance and likeness to search_query
         sortSongs(search_query, songs);
 
-        self.setState({
-          list: songs
+        self.props.store.dispatch({
+          type: 'SEARCH_SUCCESS',
+          search: search_query,
+          results: songs
         });
+
+        self.forceUpdate();
+        // dispatch search success event
+        on_search_success.trigger();
       }
     });
   },
@@ -274,29 +327,10 @@ var SearchView = React.createClass({
   },
   render: function () {
     var self = this;
-    var filteredList = self.state.list;
+    var store = this.props.store;
 
-    if (self.state.includes.length > 0 && self.state.includes[0].length > 0) {
-      filteredList = filteredList.filter(function (val, ind, arr) {
-        var title = val.title.toUpperCase();
-        return self.state.includes.find(function (val) {
-          var str = val.toUpperCase();
-          return title.indexOf(str) >= 0;
-        });
-      });
-    }
-
-    if (self.state.excludes.length > 0 && self.state.excludes[0].length > 0) {
-      filteredList = filteredList.filter(function (val, ind, arr) {
-        var title = val.title.toUpperCase();
-        return !self.state.excludes.find(function (val) {
-          var str = val.toUpperCase();
-          return title.indexOf(str) >= 0;
-        });
-      });
-    }
-
-    //var filteredList = self.state.list;
+    var filteredList = store.getState().results;
+    // chance to apply filters
 
     return (
       <div className="search-view">
@@ -321,6 +355,9 @@ var SearchView = React.createClass({
           </div>
 
         </form>
+
+        <SelectionBar />
+        <Tutorial />
         <List list={filteredList} />
       </div>
     );
@@ -353,6 +390,9 @@ var Embed = React.createClass({
 
      window.onPlayerReady = function (evt) {
       evt.target.playVideo();
+      if (typeof __play_query === 'function') {
+        __play_query();
+      }
     };
 
     window.onPlayerStateChange = function (evt) {
@@ -397,7 +437,40 @@ var Embed = React.createClass({
   }
 });
 
-var Player = React.createClass({
+var Tutorial = React.createClass({
+  render: function () {
+    var examples = [
+      "metallica !live !cover !!music !!vevo",
+      "undertale ost !cover !remix !unused",
+      "waltz goes on !live !cover",
+    ];
+
+    examples = examples.map(function (val, ind, arr) {
+      var text = val;
+      var href = window.location.origin + "?search=" + val + "&play=0";
+      return (
+        <span key={ind}>
+          <a href={href}>{text}</a><br />
+        </span>
+      );
+    });
+
+    return (
+      <div className="tutorial">
+        <pre>
+          !   - must not appear in title, example: [!cover] <br />
+          ",' - must appear in title, example: ["official, video'] <br />
+          !!  - search and exclude [!!music] (same as [music !music] <br />
+            <br />
+          examples: <br />
+            {examples}
+        </pre>
+      </div>
+    );
+  }
+});
+
+var SelectionBar = React.createClass({
   render: function () {
     return (
       <div className="player-view">
@@ -437,6 +510,7 @@ var ListItemPlayer = React.createClass({
     );
   }
 });
+
 
 var ListItemButtons = React.createClass({
   downloadClick: function (evt) {
@@ -485,16 +559,17 @@ var ListItemButtons = React.createClass({
   }
 });
 
+
 var List = React.createClass({
   render: function () {
     var list = this.props.list.map(function (val, ind, arr) {
       var song = val;
       return (
-        <div className="list-item-container">
+        <div className="list-item-container" key={ind}>
           <ListItem title={song.title}
                     duration={song.duration}
                     url={song.url}
-                    key={song.title + ind} />
+                    key={ind} />
         </div>
       )
     })
@@ -506,6 +581,7 @@ var List = React.createClass({
     )
   }
 });
+
 
 var SongTitle = React.createClass({
   getInitialState: function () {
@@ -560,6 +636,8 @@ var SongTitle = React.createClass({
     );
   }
 });
+
+
 
 var __last_item = null;
 var ListItem = React.createClass({
@@ -656,10 +734,12 @@ var ListItem = React.createClass({
 });
 
 var Component = React.createClass({
+  search: function () {
+  },
   render: function () {
     return (
       <div>
-        <SearchView />
+        <SearchView store={this.props.store} search={this.search}/>
         <Embed />
       </div>
     );
@@ -680,5 +760,6 @@ var current_position_updater = function () {
   setTimeout(current_position_updater, 100);
 };
 setTimeout(current_position_updater, 100);
+
 
 module.exports = Component;

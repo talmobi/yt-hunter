@@ -46,7 +46,21 @@ html, body {
   border-bottom: solid 1px lightblue;
   border-bottom: solid 1px #f6f4da;
 
-  margin-bottom: 50px;
+  margin-bottom: 10px;
+}
+
+.tutorial {
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+
+a {
+  color: lightblue;
+}
+
+a:hover {
+  color: lightgoldenrodyellow;
+  text-decoration: none;
 }
 
 #main-input > * {
@@ -131,6 +145,10 @@ ul, ol, li {
   width: 100%;
 }
 
+.song-list-item:hover {
+  cursor: pointer;
+}
+
 i {
   font-size: 24px;
 }
@@ -153,4 +171,8 @@ i {
 .list-item-buttons {
   display: none;
   float: right;
+}
+
+.player-view {
+  display: none;
 }
