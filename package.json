@@ -33,7 +33,7 @@
     "socket.io-client": "^1.4.5",
     "yt-filter": "0.0.3",
     "yt-search": "0.0.0",
-    "ytdl-core": "^0.7.9"
+    "ytdl-core": "^0.7.10"
   },
   "devDependencies": {
     "babel-preset-react": "^6.3.13",
