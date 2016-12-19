@@ -19,9 +19,9 @@ html, body {
   padding: 0;
   margin: 0;
 
-  max-width: 378px;
-  min-width: 378px;
-  width: 378px;
+  max-width: 556px;
+  min-width: 556px;
+  width: 556px;
 
   margin-left: auto;
   margin-right: auto;
@@ -31,7 +31,7 @@ html, body {
   position: relative;
   display: inline-block;
   height: 40px;
-  width: 378px;
+  width: 556px;
   margin: 20px 0px;
 
   font-weight: bold;
@@ -116,11 +116,11 @@ ul, ol, li {
 .list-item-container {
   display: inline-block;
   position: relative;
-  /* max-width: 378px; */
-  /* width: 378px; */
+  /* max-width: 556px; */
+  /* width: 556px; */
 
-  max-width: 378px;
-  width: 378px;
+  max-width: 556px;
+  width: 556px;
 
   height: 36px;
   margin-top: 6px;

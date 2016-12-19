@@ -2,7 +2,8 @@ var cheerio = require('cheerio');
 var request = require('request');
 var async = require('async');
 
-var yt_search_query_uri =  "https://www.youtube.com/results?search_query=";
+// https://www.youtube.com/?hl=en&gl=US
+var yt_search_query_uri =  "https://www.youtube.com/results?hl=en&gl=US&search_query=";
 
 var cache = require('short-storage').Storage({
   ttl: 1000 * 60 * 5,
@@ -62,7 +63,7 @@ function search (query, done) {
 
   // page number (youtube seach query parameter)
   var page = 1;
-  var page_limit = 5;
+  var page_limit = 7;
 
   var error = null;
 
@@ -158,12 +159,14 @@ function parseResponse (responseText, done) {
   $ = cheerio.load(responseText);
   //var _delta = Date.now() - _time;
   //console.log("parsing response with cheerio, took: " + _delta + " ms");
-  var titles = $('.yt-lockup-title');
+  // var titles = $('.yt-lockup-title');
+  var contents = $('.yt-lockup-content');
   //console.log("titles length: " + titles.length);
   var songs = [];
 
-  for (var i = 0; i < titles.length; i++) {
-    var title = titles[i];
+  for (var i = 0; i < contents.length; i++) {
+    var content = contents[i]
+    var title = $('.yt-lockup-title', content)
 
     var a = $('a', title);
     var span = $('span', title);
@@ -171,11 +174,24 @@ function parseResponse (responseText, done) {
 
     var href = a.attr('href');
 
+    var metaInfo = $('.yt-lockup-meta-info', content)
+    var metaInfoList = $('li', metaInfo)
+    // console.log(metaInfoList)
+    var agoText = $(metaInfoList[0]).text()
+    var viewsText = $(metaInfoList[1]).text()
+    // console.log(agoText)
+    // console.log(viewsText)
+    var viewsCount = Number(viewsText.split(' ')[0].split(',').join('').trim())
+
     var song = {
       title: a.text(),
       url: href,
-      duration: duration
+      duration: duration,
+      ago: agoText,
+      views: viewsCount
     };
+
+    console.log('"' + song.title + '" views: ' + song.views)
 
     songs.push(song);
   };

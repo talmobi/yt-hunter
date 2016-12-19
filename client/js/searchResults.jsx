@@ -8,7 +8,10 @@ var __last_video_id = null;
 var api = require('./api.js');
 
 var inputWatermarkText = "";
-var __max_title_width = 284;
+// var __max_title_width = 284;
+var __max_title_width = 284 * 2;
+var __title_offset = (378 - 284)
+var __max_title_width = (556 - __title_offset)
 
 var previousRequest = null;
 var previousSearch = null;
@@ -209,7 +212,7 @@ var SearchView = React.createClass({
 
       submit_timeout = setTimeout(function () {
         self.submit_search ( inputEl.value );
-      } , 1500);
+      } , 750);
     }
 
     // setup query search and auto play from querystring if exists
@@ -307,7 +310,12 @@ var SearchView = React.createClass({
         })
 
         // do basic sorting based on title relevance and likeness to search_query
-        sortSongs(search_query, songs);
+        // sortSongs(search_query, songs);
+
+        // sort by view count
+        songs.sort(function (a, b) {
+          return a.views - b.views
+        })
 
         self.props.store.dispatch({
           type: 'SEARCH_SUCCESS',
