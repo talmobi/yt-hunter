@@ -196,7 +196,7 @@ var SearchView = React.createClass({
       }
     };
     inputEl.onfocus = function () {
-      inputEl.value = "";
+      // inputEl.value = "";
     }
 
     var submit_timeout = null;
